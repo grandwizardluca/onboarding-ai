@@ -13,11 +13,25 @@ export default function ConversationPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
+  const [chatDisabled, setChatDisabled] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
     loadMessages();
+    checkChatEnabled();
   }, [conversationId]);
+
+  async function checkChatEnabled() {
+    try {
+      const res = await fetch("/api/admin/settings?key=student_chat_enabled");
+      if (res.ok) {
+        const data = await res.json();
+        setChatDisabled(data.value === false || data.value === "false");
+      }
+    } catch {
+      // If we can't check, default to enabled
+    }
+  }
 
   async function loadMessages() {
     setLoading(true);
@@ -110,7 +124,15 @@ export default function ConversationPage() {
   return (
     <div className="flex flex-1 flex-col min-h-0">
       <MessageList messages={messages} streamingContent={streamingContent} />
-      <ChatInput onSend={handleSend} disabled={sending} />
+      {chatDisabled ? (
+        <div className="border-t border-foreground/10 px-4 py-4 text-center">
+          <p className="text-foreground/50 text-sm">
+            Chat is currently disabled by the administrator.
+          </p>
+        </div>
+      ) : (
+        <ChatInput onSend={handleSend} disabled={sending} />
+      )}
     </div>
   );
 }
