@@ -17,10 +17,10 @@ export default function ChatLayout({
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <main className="flex flex-1 flex-col min-w-0">
         {/* Mobile header with menu toggle */}
-        <div className="flex items-center border-b border-foreground/10 px-4 py-3 md:hidden">
+        <div className="flex items-center border-b border-white/[0.08] glass-nav px-4 py-3 md:hidden">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="text-foreground/70 hover:text-foreground"
+            className="text-foreground/70 transition-colors duration-300 hover:text-foreground"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

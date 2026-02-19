@@ -116,14 +116,25 @@ export default function ConversationPage() {
   if (loading) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-foreground/40 text-sm">Loading messages...</p>
+        <div className="flex flex-col items-center gap-4">
+          <div className="loading-dots">
+            <span />
+            <span />
+            <span />
+          </div>
+          <p className="text-foreground/30 text-xs tracking-wide">Loading conversation</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="flex flex-1 flex-col min-h-0">
-      <MessageList messages={messages} streamingContent={streamingContent} />
+      <MessageList
+        messages={messages}
+        streamingContent={streamingContent}
+        isLoading={sending && !streamingContent}
+      />
       {chatDisabled ? (
         <div className="border-t border-foreground/10 px-4 py-4 text-center">
           <p className="text-foreground/50 text-sm">

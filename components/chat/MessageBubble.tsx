@@ -10,7 +10,7 @@ interface MessageBubbleProps {
 export default function MessageBubble({ role, content }: MessageBubbleProps) {
   if (role === "user") {
     return (
-      <div className="flex justify-end">
+      <div className="flex justify-end animate-fade-in-up">
         <div className="max-w-[80%] rounded-lg bg-user-bubble px-4 py-3 text-sm">
           {content}
         </div>
@@ -19,7 +19,7 @@ export default function MessageBubble({ role, content }: MessageBubbleProps) {
   }
 
   return (
-    <div className="flex justify-start">
+    <div className="flex justify-start animate-fade-in-up">
       <div className="max-w-[80%] border-l-2 border-accent pl-4 py-2 font-mono text-sm leading-relaxed">
         <ReactMarkdown
           components={{

@@ -74,32 +74,35 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Mobile overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm md:hidden"
           onClick={onClose}
         />
       )}
 
       <aside
-        className={`fixed top-0 left-0 z-40 h-full w-[260px] flex-shrink-0 flex flex-col border-r border-foreground/10 bg-background transition-transform md:relative md:translate-x-0 ${
+        className={`fixed top-0 left-0 z-40 h-full w-[260px] flex-shrink-0 flex flex-col border-r border-white/[0.08] glass-nav transition-transform duration-300 md:relative md:translate-x-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* Header */}
-        <div className="p-4 border-b border-foreground/10">
-          <h2 className="font-serif text-lg font-bold mb-3">Socratic.sg</h2>
+        <div className="p-4 border-b border-white/[0.08]">
+          <h2 className="font-serif text-lg font-bold mb-3 gradient-text">Socratic.sg</h2>
           <button
             onClick={handleNewConversation}
-            className="w-full rounded-md border border-accent/50 px-3 py-2 text-sm text-accent hover:bg-accent/10 transition-colors"
+            className="group w-full rounded-md border border-accent/40 px-3 py-2 text-sm text-accent transition-all duration-300 hover:bg-accent/10 hover:border-accent/70 hover:shadow-[0_0_12px_rgba(212,160,23,0.15)]"
           >
-            + New Conversation
+            <span className="inline-flex items-center gap-1.5">
+              <span className="transition-transform duration-300 group-hover:rotate-90">+</span>
+              New Conversation
+            </span>
           </button>
           <Link
             href="/chat/progress"
             onClick={onClose}
-            className={`mt-2 block w-full rounded-md px-3 py-2 text-sm transition-colors ${
+            className={`mt-2 block w-full rounded-md px-3 py-2 text-sm transition-all duration-300 ${
               pathname === "/chat/progress"
-                ? "bg-user-bubble text-foreground"
-                : "text-foreground/50 hover:text-foreground hover:bg-user-bubble/50"
+                ? "bg-white/[0.08] text-foreground"
+                : "text-foreground/50 hover:text-foreground hover:bg-white/[0.05]"
             }`}
           >
             My Progress
@@ -109,7 +112,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         {/* Conversation list */}
         <div className="flex-1 overflow-y-auto p-2">
           {loading ? (
-            <p className="text-foreground/40 text-xs p-2">Loading...</p>
+            <div className="p-2 space-y-2">
+              <div className="skeleton h-8 w-full" />
+              <div className="skeleton h-8 w-4/5" />
+              <div className="skeleton h-8 w-full" />
+            </div>
           ) : conversations.length === 0 ? (
             <p className="text-foreground/40 text-xs p-2">
               No conversations yet.
@@ -119,10 +126,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               <button
                 key={conv.id}
                 onClick={() => handleSelect(conv.id)}
-                className={`w-full text-left rounded-md px-3 py-2 text-sm truncate mb-0.5 transition-colors ${
+                className={`w-full text-left rounded-md px-3 py-2 text-sm truncate mb-0.5 transition-all duration-200 ${
                   activeId === conv.id
-                    ? "bg-user-bubble text-foreground"
-                    : "text-foreground/70 hover:bg-user-bubble/50"
+                    ? "bg-white/[0.08] text-foreground border-l-2 border-accent/60 pl-2.5"
+                    : "text-foreground/70 hover:bg-white/[0.05] hover:text-foreground"
                 }`}
               >
                 {conv.title}
@@ -132,10 +139,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
 
         {/* Logout */}
-        <div className="p-4 border-t border-foreground/10">
+        <div className="p-4 border-t border-white/[0.08]">
           <button
             onClick={handleLogout}
-            className="w-full rounded-md px-3 py-2 text-sm text-foreground/50 hover:text-foreground hover:bg-user-bubble/50 transition-colors"
+            className="w-full rounded-md px-3 py-2 text-sm text-foreground/50 transition-all duration-300 hover:text-foreground hover:bg-white/[0.05]"
           >
             Sign Out
           </button>

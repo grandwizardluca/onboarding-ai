@@ -3,6 +3,7 @@
 -- Run this entire file in the Supabase SQL Editor
 -- ============================================
 
+
 -- 1. Enable pgvector extension for vector similarity search
 create extension if not exists vector with schema extensions;
 

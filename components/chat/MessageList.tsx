@@ -13,19 +13,21 @@ export interface Message {
 interface MessageListProps {
   messages: Message[];
   streamingContent?: string;
+  isLoading?: boolean;
 }
 
 export default function MessageList({
   messages,
   streamingContent,
+  isLoading,
 }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, streamingContent]);
+  }, [messages, streamingContent, isLoading]);
 
-  if (messages.length === 0 && !streamingContent) {
+  if (messages.length === 0 && !streamingContent && !isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <p className="text-foreground/40 text-sm">
@@ -42,6 +44,17 @@ export default function MessageList({
       ))}
       {streamingContent && (
         <MessageBubble role="assistant" content={streamingContent} />
+      )}
+      {isLoading && !streamingContent && (
+        <div className="flex justify-start animate-fade-in-up">
+          <div className="border-l-2 border-accent pl-4 py-2">
+            <div className="loading-dots">
+              <span />
+              <span />
+              <span />
+            </div>
+          </div>
+        </div>
       )}
       <div ref={bottomRef} />
     </div>
