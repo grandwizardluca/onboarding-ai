@@ -23,7 +23,7 @@ export default function ConversationPage() {
 
   async function checkChatEnabled() {
     try {
-      const res = await fetch("/api/admin/settings?key=student_chat_enabled");
+      const res = await fetch("/api/settings?key=student_chat_enabled");
       if (res.ok) {
         const data = await res.json();
         setChatDisabled(data.value === false || data.value === "false");
