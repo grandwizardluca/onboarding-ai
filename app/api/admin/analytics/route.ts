@@ -11,8 +11,7 @@ export async function GET() {
     // Get all student profiles
     const { data: students, error } = await supabaseAdmin
       .from("profiles")
-      .select("id, role, created_at")
-      .eq("role", "student");
+      .select("id, role, created_at");
 
     if (error) {
       return NextResponse.json(
