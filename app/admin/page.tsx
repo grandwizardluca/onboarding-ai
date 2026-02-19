@@ -63,7 +63,7 @@ export default function AdminDashboard() {
           disabled={toggling}
           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-300 ${
             chatEnabled
-              ? "bg-accent shadow-[0_0_10px_rgba(212,160,23,0.4)]"
+              ? "bg-accent shadow-[0_0_12px_rgba(255,255,255,0.25)]"
               : "bg-foreground/20"
           } ${toggling ? "opacity-50" : ""}`}
         >
@@ -78,7 +78,7 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Link
           href="/admin/prompt"
-          className="group rounded-lg border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm p-6 transition-all duration-300 hover:border-accent/50 hover:bg-white/[0.05] hover:shadow-[0_0_20px_rgba(212,160,23,0.08)]"
+          className="group rounded-lg border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm p-6 transition-all duration-300 hover:border-accent/50 hover:bg-white/[0.05] hover:shadow-[0_0_20px_rgba(255,255,255,0.06)]"
         >
           <h3 className="font-serif text-lg font-bold mb-2 transition-colors duration-300 group-hover:text-accent">
             Edit Prompt
@@ -89,7 +89,7 @@ export default function AdminDashboard() {
         </Link>
         <Link
           href="/admin/documents"
-          className="group rounded-lg border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm p-6 transition-all duration-300 hover:border-accent/50 hover:bg-white/[0.05] hover:shadow-[0_0_20px_rgba(212,160,23,0.08)]"
+          className="group rounded-lg border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm p-6 transition-all duration-300 hover:border-accent/50 hover:bg-white/[0.05] hover:shadow-[0_0_20px_rgba(255,255,255,0.06)]"
         >
           <h3 className="font-serif text-lg font-bold mb-2 transition-colors duration-300 group-hover:text-accent">
             Documents
@@ -100,7 +100,7 @@ export default function AdminDashboard() {
         </Link>
         <Link
           href="/admin/conversations"
-          className="group rounded-lg border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm p-6 transition-all duration-300 hover:border-accent/50 hover:bg-white/[0.05] hover:shadow-[0_0_20px_rgba(212,160,23,0.08)]"
+          className="group rounded-lg border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm p-6 transition-all duration-300 hover:border-accent/50 hover:bg-white/[0.05] hover:shadow-[0_0_20px_rgba(255,255,255,0.06)]"
         >
           <h3 className="font-serif text-lg font-bold mb-2 transition-colors duration-300 group-hover:text-accent">
             Conversations

@@ -59,7 +59,7 @@ export default function SignupPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full rounded-lg border border-white/[0.12] bg-white/[0.05] px-3 py-2.5 text-sm text-foreground outline-none transition-[border-color,box-shadow] duration-300 focus:border-accent focus:shadow-[0_0_0_1px_rgba(212,160,23,0.2)] placeholder:text-foreground/30"
+                className="w-full rounded-lg border border-white/[0.12] bg-white/[0.05] px-3 py-2.5 text-sm text-foreground outline-none transition-[border-color,box-shadow] duration-300 focus:border-accent focus:shadow-[0_0_0_1px_rgba(255,255,255,0.15)] placeholder:text-foreground/30"
                 placeholder="you@example.com"
               />
             </div>
@@ -75,7 +75,7 @@ export default function SignupPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full rounded-lg border border-white/[0.12] bg-white/[0.05] px-3 py-2.5 text-sm text-foreground outline-none transition-[border-color,box-shadow] duration-300 focus:border-accent focus:shadow-[0_0_0_1px_rgba(212,160,23,0.2)] placeholder:text-foreground/30"
+                className="w-full rounded-lg border border-white/[0.12] bg-white/[0.05] px-3 py-2.5 text-sm text-foreground outline-none transition-[border-color,box-shadow] duration-300 focus:border-accent focus:shadow-[0_0_0_1px_rgba(255,255,255,0.15)] placeholder:text-foreground/30"
                 placeholder="At least 6 characters"
               />
             </div>
@@ -87,7 +87,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg bg-accent py-2.5 text-sm font-medium text-background transition-all duration-300 hover:bg-accent/85 hover:shadow-[0_0_20px_rgba(212,160,23,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full rounded-lg bg-accent py-2.5 text-sm font-medium text-background transition-all duration-300 hover:bg-accent/85 hover:shadow-[0_0_20px_rgba(255,255,255,0.18)] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <span className="inline-flex items-center justify-center gap-2">

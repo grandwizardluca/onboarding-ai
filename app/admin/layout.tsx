@@ -19,9 +19,9 @@ export default function AdminLayout({
   const pathname = usePathname();
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#0d1428" }}>
-      {/* Gold top bar — animated shimmer */}
-      <div className="h-[2px] bg-gradient-to-r from-transparent via-accent to-transparent" />
+    <div className="min-h-screen bg-admin-bg">
+      {/* White shimmer top bar */}
+      <div className="h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
 
       {/* Frosted glass navigation */}
       <nav className="sticky top-0 z-50 glass-nav border-b border-white/[0.08] px-4 sm:px-6 py-3">

@@ -49,12 +49,12 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
           placeholder="Ask a question about H2 Economics..."
           disabled={disabled}
           rows={1}
-          className="flex-1 resize-none rounded-lg border border-white/[0.12] bg-user-bubble px-4 py-3 text-sm text-foreground outline-none transition-[border-color,box-shadow] duration-300 focus:border-accent focus:shadow-[0_0_0_1px_rgba(212,160,23,0.25)] placeholder:text-foreground/40 disabled:opacity-50"
+          className="flex-1 resize-none rounded-lg border border-white/[0.12] bg-user-bubble px-4 py-3 text-sm text-foreground outline-none transition-[border-color,box-shadow] duration-300 focus:border-accent focus:shadow-[0_0_0_1px_rgba(255,255,255,0.2)] placeholder:text-foreground/40 disabled:opacity-50"
         />
         <button
           type="submit"
           disabled={disabled || !input.trim()}
-          className="group rounded-lg bg-accent px-4 py-3 text-sm font-medium text-background transition-all duration-300 hover:bg-accent/85 hover:shadow-[0_0_16px_rgba(212,160,23,0.35)] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="group rounded-lg bg-accent px-4 py-3 text-sm font-medium text-background transition-all duration-300 hover:bg-accent/85 hover:shadow-[0_0_16px_rgba(255,255,255,0.18)] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <span className="inline-flex items-center gap-1.5">
             Send

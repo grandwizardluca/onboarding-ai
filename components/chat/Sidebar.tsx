@@ -89,7 +89,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           <h2 className="font-serif text-lg font-bold mb-3 gradient-text">Socratic.sg</h2>
           <button
             onClick={handleNewConversation}
-            className="group w-full rounded-md border border-accent/40 px-3 py-2 text-sm text-accent transition-all duration-300 hover:bg-accent/10 hover:border-accent/70 hover:shadow-[0_0_12px_rgba(212,160,23,0.15)]"
+            className="group w-full rounded-md border border-accent/40 px-3 py-2 text-sm text-accent transition-all duration-300 hover:bg-accent/10 hover:border-accent/70 hover:shadow-[0_0_12px_rgba(255,255,255,0.08)]"
           >
             <span className="inline-flex items-center gap-1.5">
               <span className="transition-transform duration-300 group-hover:rotate-90">+</span>
