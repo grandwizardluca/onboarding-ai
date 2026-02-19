@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, useParams, usePathname } from "next/navigation";
 import Link from "next/link";
+import ThemeToggle from "@/components/ThemeToggle";
 
 interface Conversation {
   id: string;
@@ -86,7 +87,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       >
         {/* Header */}
         <div className="p-4 border-b border-white/[0.08]">
-          <h2 className="font-serif text-lg font-bold mb-3 gradient-text">Socratic.sg</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-serif text-lg font-bold gradient-text">Socratic.sg</h2>
+            <ThemeToggle />
+          </div>
           <button
             onClick={handleNewConversation}
             className="group w-full rounded-md border border-accent/40 px-3 py-2 text-sm text-accent transition-all duration-300 hover:bg-accent/10 hover:border-accent/70 hover:shadow-[0_0_12px_rgba(255,255,255,0.08)]"

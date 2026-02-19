@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { PageLoader } from "@/components/PageLoader";
 
 interface StudentRow {
   user_id: string;
@@ -44,15 +45,11 @@ export default function AdminAnalyticsPage() {
   const alerts = students.filter((s) => s.alert);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-foreground/40 text-sm">Loading analytics...</p>
-      </div>
-    );
+    return <PageLoader label="Loading analytics" />;
   }
 
   return (
-    <div>
+    <div className="animate-fade-in-up">
       <h2 className="font-serif text-2xl font-bold mb-6">Student Analytics</h2>
 
       {/* Alerts */}
@@ -61,7 +58,7 @@ export default function AdminAnalyticsPage() {
           {alerts.map((student) => (
             <div
               key={student.user_id}
-              className="rounded-lg border border-red-500/30 bg-red-500/5 p-3 flex items-center gap-3"
+              className="rounded-lg border border-red-500/30 bg-red-500/5 p-3 flex items-center gap-3 transition-all duration-300 hover:border-red-500/50 hover:bg-red-500/[0.08]"
             >
               <span className="text-red-400 text-lg">!</span>
               <div className="text-sm">
@@ -87,10 +84,10 @@ export default function AdminAnalyticsPage() {
       {students.length === 0 ? (
         <p className="text-foreground/40 text-sm">No students found.</p>
       ) : (
-        <div className="rounded-lg border border-foreground/10 overflow-hidden">
+        <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-foreground/10 text-left text-xs text-foreground/50">
+              <tr className="border-b border-white/[0.08] text-left text-xs text-foreground/50">
                 <th className="px-4 py-3">Student</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3 hidden sm:table-cell">
@@ -107,12 +104,12 @@ export default function AdminAnalyticsPage() {
                 return (
                   <tr
                     key={student.user_id}
-                    className="border-b border-foreground/5 hover:bg-foreground/5 transition-colors"
+                    className="border-b border-white/[0.05] last:border-0 transition-all duration-200 hover:bg-white/[0.04]"
                   >
                     <td className="px-4 py-3">
                       <Link
                         href={`/admin/analytics/${student.user_id}`}
-                        className="text-sm hover:text-accent transition-colors"
+                        className="text-sm transition-all duration-200 hover:text-foreground hover:underline underline-offset-2"
                       >
                         {student.email}
                       </Link>

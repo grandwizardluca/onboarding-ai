@@ -1,13 +1,23 @@
 @import "tailwindcss";
 
 :root {
-  /* ── New color system: pure black / white / grey (webtech-dark) ── */
+  /* Dark mode (default) */
   --background: #111111;
   --foreground: #f1f1f1;
-  --accent: #f1f1f1;         /* white — buttons, borders, interactive */
-  --muted: #a1a1a1;          /* grey — secondary text */
-  --user-bubble: #1e1e1e;    /* dark grey card for user messages */
-  --admin-bg: #0a0a0a;       /* slightly darker for admin */
+  --accent: #f1f1f1;
+  --muted: #a1a1a1;
+  --user-bubble: #1e1e1e;
+  --admin-bg: #0a0a0a;
+}
+
+/* ── Light mode overrides ── */
+[data-theme="light"] {
+  --background: #f7f7f7;
+  --foreground: #1a1a1a;
+  --accent: #1a1a1a;
+  --muted: #666666;
+  --user-bubble: #ebebeb;
+  --admin-bg: #eeeeee;
 }
 
 @theme inline {
@@ -17,8 +27,8 @@
   --color-muted: var(--muted);
   --color-user-bubble: var(--user-bubble);
   --color-admin-bg: var(--admin-bg);
-  /* Fonts: Space Grotesk for headings, Manrope for UI, JetBrains for code */
-  --font-sans: var(--font-manrope);
+  /* Inter for UI (closest to Claude's Söhne), Space Grotesk for headings */
+  --font-sans: var(--font-inter);
   --font-serif: var(--font-space-grotesk);
   --font-mono: var(--font-jetbrains);
 }
@@ -27,9 +37,10 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  transition: background-color 0.3s ease, color 0.2s ease;
 }
 
-/* Space Grotesk headings get slight tracking — matches Neutral Face feel */
+/* Space Grotesk headings */
 .font-serif {
   letter-spacing: -0.01em;
 }
@@ -51,32 +62,60 @@ body {
   100% { background-position:  400px 0; }
 }
 
+@keyframes ring-pulse {
+  0%, 100% { transform: scale(1);    opacity: 0.22; }
+  50%      { transform: scale(1.14); opacity: 0.6;  }
+}
+
 /* ── Utility Classes ── */
 
-/* Fade-up entrance */
 .animate-fade-in-up {
   animation: fade-in-up 0.4s ease-out forwards;
 }
 
-/* Gradient text: white fading to grey/dark — webtech-dark signature effect */
+.animate-ring-pulse {
+  animation: ring-pulse 2s ease-in-out infinite;
+}
+
+.animate-ring-pulse-delay {
+  animation: ring-pulse 2s ease-in-out 0.55s infinite;
+}
+
+/* Metallic silver gradient — stands out on dark AND adapts on light */
 .gradient-text {
-  background: linear-gradient(130deg, #f1f1f1 30%, #2a2a2a 70%);
+  background: linear-gradient(135deg, #ffffff 0%, #e2e2e2 35%, #b0b0b0 65%, #d8d8d8 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-/* Glass card — rgba white on black: fully visible contrast */
+[data-theme="light"] .gradient-text {
+  background: linear-gradient(135deg, #111111 0%, #333333 40%, #777777 75%, #444444 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Glass card */
 .glass-card {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  transition: border-color 0.3s ease, background-color 0.3s ease;
+  transition: border-color 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
 }
 .glass-card:hover {
   background: rgba(255, 255, 255, 0.09);
   border-color: rgba(255, 255, 255, 0.35);
+}
+
+[data-theme="light"] .glass-card {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+[data-theme="light"] .glass-card:hover {
+  background: rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 0, 0, 0.22);
 }
 
 /* Frosted glass nav / sidebar */
@@ -85,8 +124,12 @@ body {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
 }
+[data-theme="light"] .glass-nav {
+  background: rgba(247, 247, 247, 0.92);
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
 
-/* Loading dots — white on black */
+/* Loading dots */
 .loading-dots {
   display: inline-flex;
   align-items: center;
@@ -108,35 +151,34 @@ body {
   background: linear-gradient(
     90deg,
     rgba(255, 255, 255, 0.04) 25%,
-    rgba(255, 255, 255, 0.1)  50%,
+    rgba(255, 255, 255, 0.10) 50%,
     rgba(255, 255, 255, 0.04) 75%
   );
   background-size: 400px 100%;
   animation: shimmer 1.5s linear infinite;
   border-radius: 6px;
 }
+[data-theme="light"] .skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.04) 25%,
+    rgba(0, 0, 0, 0.09) 50%,
+    rgba(0, 0, 0, 0.04) 75%
+  );
+  background-size: 400px 100%;
+}
 
 /* Print styles */
 @media print {
-  .print-hidden {
-    display: none !important;
-  }
-  .print-only {
-    display: block !important;
-  }
+  .print-hidden { display: none !important; }
+  .print-only   { display: block !important; }
   body, html {
     background: white !important;
     color: black !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
-  .rounded-lg {
-    border-color: #ddd !important;
-  }
-  .recharts-responsive-container {
-    width: 100% !important;
-  }
-  .print-break-before {
-    page-break-before: always;
-  }
+  .rounded-lg { border-color: #ddd !important; }
+  .recharts-responsive-container { width: 100% !important; }
+  .print-break-before { page-break-before: always; }
 }

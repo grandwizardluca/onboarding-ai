@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const navItems = [
   { href: "/admin", label: "Dashboard" },
@@ -33,12 +34,15 @@ export default function AdminLayout({
                 Admin
               </span>
             </h1>
-            <Link
-              href="/chat"
-              className="text-sm text-foreground/40 transition-[color,letter-spacing] duration-300 hover:text-foreground hover:tracking-wide"
-            >
-              ← Back to Chat
-            </Link>
+            <div className="flex items-center gap-1">
+              <ThemeToggle />
+              <Link
+                href="/chat"
+                className="text-sm text-foreground/40 transition-[color,letter-spacing] duration-300 hover:text-foreground hover:tracking-wide"
+              >
+                ← Back to Chat
+              </Link>
+            </div>
           </div>
           <div className="flex gap-1 overflow-x-auto -mx-1 px-1 sm:mt-2">
             {navItems.map((item) => {

@@ -20,7 +20,7 @@ export default function MessageBubble({ role, content }: MessageBubbleProps) {
 
   return (
     <div className="flex justify-start animate-fade-in-up">
-      <div className="max-w-[80%] border-l-2 border-accent pl-4 py-2 font-mono text-sm leading-relaxed">
+      <div className="max-w-[80%] border-l-2 border-accent pl-4 py-2 font-sans text-sm leading-relaxed">
         <ReactMarkdown
           components={{
             p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
@@ -38,13 +38,13 @@ export default function MessageBubble({ role, content }: MessageBubbleProps) {
               const isBlock = className?.includes("language-");
               if (isBlock) {
                 return (
-                  <code className="block rounded bg-user-bubble p-3 my-2 text-xs overflow-x-auto">
+                  <code className="block rounded bg-user-bubble p-3 my-2 text-xs font-mono overflow-x-auto">
                     {children}
                   </code>
                 );
               }
               return (
-                <code className="rounded bg-user-bubble px-1.5 py-0.5 text-xs">
+                <code className="rounded bg-user-bubble px-1.5 py-0.5 text-xs font-mono">
                   {children}
                 </code>
               );

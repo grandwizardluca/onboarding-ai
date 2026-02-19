@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
-import { Manrope, Space_Grotesk, JetBrains_Mono } from "next/font/google";
+import { Inter, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import Providers from "@/components/Providers";
 import "./globals.css";
 
-const manrope = Manrope({
-  variable: "--font-manrope",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
 });
 
 const spaceGrotesk = Space_Grotesk({
@@ -33,8 +32,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      {/* Prevent flash of wrong theme before JS loads */}
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}`,
+          }}
+        />
+      </head>
       <body
-        className={`${manrope.variable} ${spaceGrotesk.variable} ${jetbrains.variable} antialiased`}
+        className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrains.variable} antialiased`}
       >
         <Providers>{children}</Providers>
       </body>

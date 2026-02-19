@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Sidebar from "@/components/chat/Sidebar";
 import { useActivityTracker } from "@/lib/hooks/useActivityTracker";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function ChatLayout({
   children,
@@ -38,7 +39,8 @@ export default function ChatLayout({
               <line x1="3" y1="18" x2="21" y2="18" />
             </svg>
           </button>
-          <span className="font-serif text-sm font-bold ml-3">Socratic.sg</span>
+          <span className="font-serif text-sm font-bold ml-3 flex-1">Socratic.sg</span>
+          <ThemeToggle />
         </div>
         {children}
       </main>
