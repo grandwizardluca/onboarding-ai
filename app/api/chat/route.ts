@@ -137,6 +137,11 @@ export async function POST(request: NextRequest) {
     const readableStream = new ReadableStream({
       async start(controller) {
         try {
+          const MAX_RESPONSE_LENGTH = 6000;
+          const TRUNCATION_WARNING =
+            "\n\n⚠️ My response is too long for one message. I'll need to break this into parts. Ask me to continue, or rephrase your question to be more specific.";
+          let truncated = false;
+
           for await (const event of stream) {
             if (
               event.type === "content_block_delta" &&
@@ -144,6 +149,18 @@ export async function POST(request: NextRequest) {
             ) {
               const text = event.delta.text;
               fullResponse += text;
+
+              if (fullResponse.length > MAX_RESPONSE_LENGTH) {
+                // Send the warning and stop streaming
+                controller.enqueue(
+                  new TextEncoder().encode(TRUNCATION_WARNING)
+                );
+                fullResponse += TRUNCATION_WARNING;
+                truncated = true;
+                stream.abort();
+                break;
+              }
+
               controller.enqueue(new TextEncoder().encode(text));
             }
           }
