@@ -45,11 +45,11 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div>
+    <div className="animate-fade-in-up">
       <h2 className="font-serif text-2xl font-bold mb-6">Admin Dashboard</h2>
 
       {/* Chat toggle */}
-      <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm p-4 mb-6 flex items-center justify-between transition-all duration-300 hover:bg-white/[0.04] hover:border-white/[0.14]">
+      <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm p-4 mb-6 flex items-center justify-between transition-all duration-300 hover:bg-white/[0.08] hover:border-white/[0.25] hover:shadow-[0_0_20px_rgba(255,255,255,0.07)]">
         <div>
           <h3 className="text-sm font-medium">Student Chat</h3>
           <p className="text-xs text-foreground/40 mt-0.5">
@@ -78,34 +78,34 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Link
           href="/admin/prompt"
-          className="group rounded-lg border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm p-6 transition-all duration-300 hover:border-accent/50 hover:bg-white/[0.05] hover:shadow-[0_0_20px_rgba(255,255,255,0.06)]"
+          className="group rounded-lg border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm p-6 transition-all duration-300 hover:border-white/[0.35] hover:bg-white/[0.08] hover:shadow-[0_4px_32px_rgba(255,255,255,0.12)] hover:-translate-y-0.5"
         >
-          <h3 className="font-serif text-lg font-bold mb-2 transition-colors duration-300 group-hover:text-accent">
+          <h3 className="font-serif text-lg font-bold mb-2">
             Edit Prompt
           </h3>
-          <p className="text-sm text-foreground/50">
+          <p className="text-sm text-foreground/50 transition-colors duration-300 group-hover:text-foreground/70">
             Edit the AI system prompt that controls how Socratic tutors students.
           </p>
         </Link>
         <Link
           href="/admin/documents"
-          className="group rounded-lg border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm p-6 transition-all duration-300 hover:border-accent/50 hover:bg-white/[0.05] hover:shadow-[0_0_20px_rgba(255,255,255,0.06)]"
+          className="group rounded-lg border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm p-6 transition-all duration-300 hover:border-white/[0.35] hover:bg-white/[0.08] hover:shadow-[0_4px_32px_rgba(255,255,255,0.12)] hover:-translate-y-0.5"
         >
-          <h3 className="font-serif text-lg font-bold mb-2 transition-colors duration-300 group-hover:text-accent">
+          <h3 className="font-serif text-lg font-bold mb-2">
             Documents
           </h3>
-          <p className="text-sm text-foreground/50">
+          <p className="text-sm text-foreground/50 transition-colors duration-300 group-hover:text-foreground/70">
             Upload syllabus PDFs and notes to the knowledge base.
           </p>
         </Link>
         <Link
           href="/admin/conversations"
-          className="group rounded-lg border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm p-6 transition-all duration-300 hover:border-accent/50 hover:bg-white/[0.05] hover:shadow-[0_0_20px_rgba(255,255,255,0.06)]"
+          className="group rounded-lg border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm p-6 transition-all duration-300 hover:border-white/[0.35] hover:bg-white/[0.08] hover:shadow-[0_4px_32px_rgba(255,255,255,0.12)] hover:-translate-y-0.5"
         >
-          <h3 className="font-serif text-lg font-bold mb-2 transition-colors duration-300 group-hover:text-accent">
+          <h3 className="font-serif text-lg font-bold mb-2">
             Conversations
           </h3>
-          <p className="text-sm text-foreground/50">
+          <p className="text-sm text-foreground/50 transition-colors duration-300 group-hover:text-foreground/70">
             View all student conversations and monitor progress.
           </p>
         </Link>
