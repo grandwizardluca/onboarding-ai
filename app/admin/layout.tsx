@@ -38,7 +38,7 @@ export default function AdminLayout({
               <ThemeToggle />
               <Link
                 href="/chat"
-                className="text-sm text-foreground/40 transition-[color,letter-spacing] duration-300 hover:text-foreground hover:tracking-wide"
+                className="rounded-md px-3 py-1.5 text-sm text-foreground/40 transition-all duration-300 hover:text-foreground hover:bg-white/[0.10] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.12)]"
               >
                 ← Back to Chat
               </Link>
@@ -55,10 +55,10 @@ export default function AdminLayout({
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`rounded-md px-3 py-1.5 text-sm whitespace-nowrap transition-[color,background-color,letter-spacing] duration-300 ${
+                  className={`rounded-md px-3 py-1.5 text-sm whitespace-nowrap transition-all duration-300 ${
                     isActive
-                      ? "bg-accent/10 text-accent tracking-wide"
-                      : "text-foreground/60 hover:text-foreground hover:bg-white/[0.05] hover:tracking-wide"
+                      ? "bg-accent/10 text-accent shadow-[0_0_0_1px_rgba(255,255,255,0.15)]"
+                      : "text-foreground/55 hover:text-foreground hover:bg-white/[0.10] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.12)]"
                   }`}
                 >
                   {item.label}
