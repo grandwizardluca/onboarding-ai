@@ -8,6 +8,7 @@ const navItems = [
   { href: "/admin/prompt", label: "Prompt" },
   { href: "/admin/documents", label: "Documents" },
   { href: "/admin/conversations", label: "Conversations" },
+  { href: "/admin/analytics", label: "Analytics" },
 ];
 
 export default function AdminLayout({

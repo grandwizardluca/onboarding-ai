@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Sidebar from "@/components/chat/Sidebar";
+import { useActivityTracker } from "@/lib/hooks/useActivityTracker";
 
 export default function ChatLayout({
   children,
@@ -9,6 +10,7 @@ export default function ChatLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  useActivityTracker();
 
   return (
     <div className="flex h-screen overflow-hidden">

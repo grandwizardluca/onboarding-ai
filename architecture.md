@@ -52,14 +52,25 @@ socratic-sg/
 │       │   └── route.ts       # Create / list conversations
 │       ├── documents/
 │       │   └── route.ts       # Upload, process, list, delete documents
+│       ├── activity/
+│       │   └── route.ts       # Record 30s binary activity pulses
+│       ├── progress/
+│       │   ├── sessions/      # Student study sessions
+│       │   ├── topics/        # Student topic coverage
+│       │   └── stats/         # Study stats (streak, hours)
+│       ├── settings/
+│       │   └── route.ts       # Public read-only settings
 │       └── admin/
-│           └── prompt/
-│               └── route.ts   # Get / update system prompt
+│           ├── prompt/        # System prompt CRUD
+│           ├── settings/      # Admin settings CRUD
+│           ├── conversations/ # View all student conversations
+│           └── analytics/     # Student analytics overview + per-student detail
 │
 ├── components/
 │   ├── ui/                    # Reusable UI primitives (buttons, inputs, toasts)
 │   ├── chat/
-│   │   ├── Sidebar.tsx        # Conversation list + new conversation button
+│   │   ├── Sidebar.tsx        # Conversation list + progress link
+│   │   ├── progress/          # StudyStats, ActivityTimeline, WeeklyHeatmap, TopicCoverage, RecentConversations
 │   │   ├── MessageList.tsx    # Renders conversation messages
 │   │   ├── MessageBubble.tsx  # Single message with markdown rendering
 │   │   └── ChatInput.tsx      # Text input + send button (fixed bottom)
@@ -75,7 +86,11 @@ socratic-sg/
 │   ├── anthropic.ts           # Anthropic client initialisation
 │   ├── openai.ts              # OpenAI client (embeddings only)
 │   ├── rag.ts                 # RAG pipeline: embed query → search chunks → return context
-│   └── chunker.ts             # Text chunking logic for document processing
+│   ├── chunker.ts             # Text chunking logic for document processing
+│   ├── topics.ts              # H2 Economics topic taxonomy + keyword extraction
+│   ├── sessions.ts            # Study session computation from activity pulses
+│   └── hooks/
+│       └── useActivityTracker.ts  # Client hook: 30s binary activity pulse detection
 │
 └── middleware.ts              # Route protection: auth check, admin role check
 ```
@@ -188,6 +203,50 @@ DocumentList.tsx shows new document with chunk count
 
 ---
 
+### Table: activity_events
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | primary key |
+| user_id | uuid | references auth.users |
+| mouse_active | boolean | mouse moved in this 30s window |
+| keyboard_active | boolean | keyboard touched in this 30s window |
+| tab_focused | boolean | tab was focused |
+| message_sent | boolean | student sent a message |
+| created_at | timestamp | |
+
+### Table: study_sessions
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | primary key |
+| user_id | uuid | references auth.users |
+| started_at | timestamp | session start |
+| ended_at | timestamp | session end |
+| duration_minutes | int | computed from start/end |
+| mouse_active_count | int | active 30s windows with mouse |
+| keyboard_active_count | int | active 30s windows with keyboard |
+| messages_sent | int | questions asked in session |
+
+### Table: conversation_topics
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | primary key |
+| conversation_id | uuid | references conversations |
+| user_id | uuid | references auth.users |
+| topic_key | text | e.g. "elasticity" |
+| topic_label | text | e.g. "Elasticity" |
+| category | text | "micro" or "macro" |
+| mention_count | int | keyword hits |
+| unique | | (conversation_id, topic_key) |
+
+### Table: settings
+| Column | Type | Notes |
+|--------|------|-------|
+| key | text | primary key |
+| value | jsonb | setting value |
+| updated_at | timestamp | |
+
+---
+
 ## Environment Variables
 
 ```
@@ -233,5 +292,7 @@ These parts of the codebase are intentionally isolated from each other:
 2. **Admin panel** — completely separate routes, layout, and components from student panel
 3. **Auth middleware** — route protection logic lives only in middleware.ts
 4. **Document processing** — /api/documents handles everything; no document logic bleeds into /api/chat
+
+5. **Analytics** — activity tracking, session computation, topic extraction, progress dashboards (student + admin)
 
 When Claude Code works on one segment, it should not need to read files from another segment unless explicitly told to.

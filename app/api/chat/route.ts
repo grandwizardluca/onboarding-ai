@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
 import anthropic from "@/lib/anthropic";
 import { retrieveContext } from "@/lib/rag";
+import { extractTopics } from "@/lib/topics";
 
 export const runtime = "nodejs";
 
@@ -49,6 +50,46 @@ export async function POST(request: NextRequest) {
       role: "user",
       content: message,
     });
+
+    // 3b. Record a message_sent activity event
+    await supabaseAdmin.from("activity_events").insert({
+      user_id: user.id,
+      mouse_active: false,
+      keyboard_active: true,
+      tab_focused: true,
+      message_sent: true,
+    });
+
+    // 3c. Extract and upsert topic tags from the message
+    const topics = extractTopics(message);
+    for (const topic of topics) {
+      // Try to update existing row first, insert if not found
+      const { data: existing } = await supabaseAdmin
+        .from("conversation_topics")
+        .select("id, mention_count")
+        .eq("conversation_id", conversationId)
+        .eq("topic_key", topic.topicKey)
+        .single();
+
+      if (existing) {
+        await supabaseAdmin
+          .from("conversation_topics")
+          .update({
+            mention_count: existing.mention_count + topic.matchCount,
+            last_mentioned_at: new Date().toISOString(),
+          })
+          .eq("id", existing.id);
+      } else {
+        await supabaseAdmin.from("conversation_topics").insert({
+          conversation_id: conversationId,
+          user_id: user.id,
+          topic_key: topic.topicKey,
+          topic_label: topic.topicLabel,
+          category: topic.category,
+          mention_count: topic.matchCount,
+        });
+      }
+    }
 
     // 4. Load the active system prompt
     const { data: promptData } = await supabaseAdmin

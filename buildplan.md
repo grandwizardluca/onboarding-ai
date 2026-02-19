@@ -151,5 +151,37 @@ After completing each phase, Claude Code must:
 
 ---
 
+## Phase 8: Learning Analytics & Progress Tracking
+- [x] Create `supabase/003_analytics.sql` — activity_events, study_sessions, conversation_topics tables
+- [x] Create `app/api/activity/route.ts` — receives 30s binary activity pulses
+- [x] Create `lib/hooks/useActivityTracker.ts` — frontend hook for 30s pulse detection
+- [x] Integrate activity tracker into `app/chat/layout.tsx`
+- [x] Add message_sent activity event to `app/api/chat/route.ts`
+- [x] Create `lib/topics.ts` — H2 Economics topic taxonomy (12 topics) + keyword extraction
+- [x] Create `lib/sessions.ts` — session computation from activity pulses (5-min gap logic)
+- [x] Create progress API endpoints: `/api/progress/sessions`, `/api/progress/topics`, `/api/progress/stats`
+- [x] Integrate topic extraction into chat API route
+- [x] Install `recharts` charting library
+- [x] Build student progress dashboard at `/chat/progress`:
+  - [x] StudyStats (streak, hours, sessions, questions)
+  - [x] WeeklyHeatmap (7-day study hours)
+  - [x] ActivityTimeline (green=mouse, blue=keyboard, gold=questions, grey=idle)
+  - [x] TopicCoverage (12 H2 Econ topics with strength bars)
+  - [x] RecentConversations (with topic tags)
+- [x] Add "My Progress" link to chat sidebar
+- [x] Build admin analytics dashboard at `/admin/analytics`:
+  - [x] Student table with status, hours, streak, topics, alerts
+  - [x] Engagement alerts (3+ day inactive, declining study time)
+  - [x] Per-student detail view with trend charts, timeline, topic coverage, engagement pie
+- [x] Add "Analytics" to admin navigation
+- [x] Create admin analytics API endpoints: `/api/admin/analytics`, `/api/admin/analytics/[userId]`
+- [x] Add PDF export via `window.print()` with `@media print` CSS
+- [x] Add print-only header/footer for probation evidence reports
+
+**Done. Run 003_analytics.sql in Supabase, then deploy.**
+
+---
+
 ## Known Issues / Deferred Items
 *(Claude Code updates this section during the build)*
+- Phase 7 deployment items (Vercel env vars, production testing) still pending manual completion

@@ -24,3 +24,37 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
 }
+
+/* Print styles for PDF export */
+@media print {
+  .print-hidden {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  body,
+  html {
+    background: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Override dark theme for print */
+  .rounded-lg {
+    border-color: #ddd !important;
+  }
+
+  /* Make charts full width */
+  .recharts-responsive-container {
+    width: 100% !important;
+  }
+
+  /* Page break control */
+  .print-break-before {
+    page-break-before: always;
+  }
+}

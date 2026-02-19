@@ -76,7 +76,8 @@ When working on a feature, you only need to understand its segment. Do not read 
 | AI + RAG | app/api/chat/, lib/rag.ts, lib/anthropic.ts |
 | Document Processing | app/api/documents/, lib/chunker.ts, lib/openai.ts |
 | Admin Panel | app/admin/, components/admin/, app/api/admin/ |
-| Database | supabase/schema.sql, lib/supabase/ |
+| Analytics | app/chat/progress/, app/admin/analytics/, app/api/progress/, app/api/admin/analytics/, lib/topics.ts, lib/sessions.ts, lib/hooks/, components/chat/progress/, components/admin/analytics/ |
+| Database | supabase/*.sql, lib/supabase/ |
 
 ---
 

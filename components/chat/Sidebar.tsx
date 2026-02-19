@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, usePathname } from "next/navigation";
+import Link from "next/link";
 
 interface Conversation {
   id: string;
@@ -21,6 +22,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const router = useRouter();
   const params = useParams();
   const activeId = params?.id as string | undefined;
+  const pathname = usePathname();
   const supabase = createClient();
 
   useEffect(() => {
@@ -91,6 +93,17 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           >
             + New Conversation
           </button>
+          <Link
+            href="/chat/progress"
+            onClick={onClose}
+            className={`mt-2 block w-full rounded-md px-3 py-2 text-sm transition-colors ${
+              pathname === "/chat/progress"
+                ? "bg-user-bubble text-foreground"
+                : "text-foreground/50 hover:text-foreground hover:bg-user-bubble/50"
+            }`}
+          >
+            My Progress
+          </Link>
         </div>
 
         {/* Conversation list */}
