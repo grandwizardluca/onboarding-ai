@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Sidebar from "@/components/chat/Sidebar";
 import { useActivityTracker } from "@/lib/hooks/useActivityTracker";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -11,10 +11,32 @@ export default function ChatLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [bgMode, setBgMode] = useState<"standard" | "image">("standard");
+  const [bgUrl, setBgUrl] = useState<string | null>(null);
   useActivityTracker();
 
+  useEffect(() => {
+    fetch("/api/ui-settings")
+      .then((r) => r.json())
+      .then((data) => {
+        setBgMode(data.background_mode);
+        setBgUrl(data.background_url);
+      })
+      .catch(() => {});
+  }, []);
+
+  const bgStyle =
+    bgMode === "image" && bgUrl
+      ? {
+          backgroundImage: `linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url(${bgUrl})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundAttachment: "fixed",
+        }
+      : undefined;
+
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden" style={bgStyle}>
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <main className="flex flex-1 flex-col min-w-0">
         {/* Mobile header with menu toggle */}

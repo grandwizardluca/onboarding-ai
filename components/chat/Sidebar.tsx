@@ -20,6 +20,8 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [logoMode, setLogoMode] = useState<"standard" | "image">("standard");
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const router = useRouter();
   const params = useParams();
   const activeId = params?.id as string | undefined;
@@ -28,7 +30,21 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   useEffect(() => {
     loadConversations();
+    loadUISettings();
   }, []);
+
+  async function loadUISettings() {
+    try {
+      const res = await fetch("/api/ui-settings");
+      if (res.ok) {
+        const data = await res.json();
+        setLogoMode(data.sidebar_mode);
+        setLogoUrl(data.sidebar_url);
+      }
+    } catch {
+      // Non-critical — keep standard logo
+    }
+  }
 
   async function loadConversations() {
     const { data } = await supabase
@@ -97,7 +113,17 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         {/* Header */}
         <div className="p-4 border-b border-ui">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-serif text-lg font-bold gradient-text">Socratic.sg</h2>
+            {logoMode === "image" && logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={logoUrl}
+                alt="Socratic.sg"
+                style={{ maxHeight: "80px" }}
+                className="w-auto object-contain"
+              />
+            ) : (
+              <h2 className="font-serif text-lg font-bold gradient-text">Socratic.sg</h2>
+            )}
             <ThemeToggle />
           </div>
           <button

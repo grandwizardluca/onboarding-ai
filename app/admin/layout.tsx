@@ -10,6 +10,7 @@ const navItems = [
   { href: "/admin/documents", label: "Documents" },
   { href: "/admin/conversations", label: "Conversations" },
   { href: "/admin/analytics", label: "Analytics" },
+  { href: "/admin/images", label: "UI Customization", icon: true },
 ];
 
 export default function AdminLayout({
@@ -55,12 +56,31 @@ export default function AdminLayout({
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`rounded-md px-3 py-1.5 text-sm whitespace-nowrap transition-all duration-300 ${
+                  className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm whitespace-nowrap transition-all duration-300 ${
                     isActive
                       ? "bg-ui-2 text-foreground border border-ui-strong"
                       : "text-foreground/55 hover:text-foreground hover-bg-ui-2 border border-transparent"
                   }`}
                 >
+                  {item.icon && (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
+                      <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
+                      <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
+                      <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
+                      <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />
+                    </svg>
+                  )}
                   {item.label}
                 </Link>
               );
