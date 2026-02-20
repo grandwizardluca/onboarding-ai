@@ -64,15 +64,34 @@ export async function POST(request: NextRequest) {
 
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
     const filePath = `${Date.now()}-${safeName}`;
-    const buffer = Buffer.from(await file.arrayBuffer());
+    const arrayBuffer = await file.arrayBuffer();
+
+    // Ensure the bucket exists — create it if it was never initialised via SQL
+    const { error: bucketError } = await supabaseAdmin.storage.getBucket(
+      "ui-images"
+    );
+    if (bucketError) {
+      const { error: createError } = await supabaseAdmin.storage.createBucket(
+        "ui-images",
+        { public: true }
+      );
+      if (createError) {
+        console.error("Bucket creation error:", createError);
+        return NextResponse.json(
+          { error: `Bucket error: ${createError.message}` },
+          { status: 500 }
+        );
+      }
+    }
 
     const { error: uploadError } = await supabaseAdmin.storage
       .from("ui-images")
-      .upload(filePath, buffer, { contentType: file.type });
+      .upload(filePath, arrayBuffer, { contentType: file.type });
 
     if (uploadError) {
+      console.error("Storage upload error:", uploadError);
       return NextResponse.json(
-        { error: "Storage upload failed" },
+        { error: `Storage error: ${uploadError.message}` },
         { status: 500 }
       );
     }

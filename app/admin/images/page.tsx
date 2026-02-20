@@ -105,7 +105,9 @@ export default function ImagesPage() {
       showToast("Image uploaded", "success");
     } else {
       const err = await res.json().catch(() => ({ error: "Upload failed" }));
-      showToast(err.error || "Upload failed", "error");
+      const msg = err.error || "Upload failed";
+      console.error("Upload error:", msg, "status:", res.status);
+      showToast(msg, "error");
     }
 
     setUploading(false);
