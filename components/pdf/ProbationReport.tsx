@@ -389,9 +389,10 @@ function CoverPage({
         </View>
 
         <View style={s.coverBadge}>
-          <Text style={s.coverBadgeText}>
-            OFFICIAL STUDY RECORD · FOR SUBMISSION TO PROBATION AUTHORITIES
+          <Text style={[s.coverBadgeText, { fontFamily: "Helvetica-Bold", fontSize: 10, marginBottom: 4 }]}>
+            Forensic Study Report
           </Text>
+          <Text style={[s.coverBadgeText, { fontSize: 8 }]}>{studentEmail}</Text>
         </View>
       </View>
       <Footer generatedAt={generatedAt} />
