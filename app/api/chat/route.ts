@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
 import anthropic from "@/lib/anthropic";
 import { retrieveContext } from "@/lib/rag";
-import { extractTopics, TOPIC_KEYS } from "@/lib/topics";
+import { extractSubtopics, TOPIC_KEYS, SUBTOPIC_KEYS } from "@/lib/topics";
 
 export const runtime = "nodejs";
 
@@ -17,22 +17,29 @@ const QUIZ_SYSTEM_PROMPT = `You are a Socratic tutor in quiz mode. The student h
 
 1. Generate ONE comprehension question testing deep understanding — scenario-based application questions, NOT definition recall.
 2. After the student answers, evaluate their response 0-100 based on accuracy, depth of reasoning, and application of concepts.
-3. Call the record_quiz_score tool with topic_key, score, and brief feedback explaining your evaluation.
+3. Call the record_quiz_score tool with topic_key, subtopic_key, score, and brief feedback explaining your evaluation.
 4. Provide encouraging feedback and offer another question.
 
-Make questions challenging but fair. Focus on higher-order thinking: application, analysis, and evaluation.`;
+Make questions challenging but fair. Focus on higher-order thinking: application, analysis, and evaluation.
+
+CRITICAL: Do NOT explain the topic before asking your question. Jump straight into the scenario-based question. Your role is to TEST understanding, not teach.`;
 
 const RECORD_QUIZ_SCORE_TOOL = {
   name: "record_quiz_score",
   description:
-    "Record a quiz score for a specific H2 Economics topic after evaluating the student's answer",
+    "Record a quiz score for a specific H2 Economics subtopic after evaluating the student's answer",
   input_schema: {
     type: "object" as const,
     properties: {
       topic_key: {
         type: "string",
         enum: TOPIC_KEYS,
-        description: "The H2 Economics topic key being tested",
+        description: "The main H2 Economics topic key (e.g. demand_supply)",
+      },
+      subtopic_key: {
+        type: "string",
+        enum: SUBTOPIC_KEYS,
+        description: "The specific subtopic being tested (e.g. elasticities)",
       },
       score: {
         type: "integer",
@@ -45,7 +52,7 @@ const RECORD_QUIZ_SCORE_TOOL = {
         description: "Brief explanation of the score (2-3 sentences)",
       },
     },
-    required: ["topic_key", "score", "feedback"],
+    required: ["topic_key", "subtopic_key", "score", "feedback"],
   },
 };
 
@@ -105,22 +112,23 @@ export async function POST(request: NextRequest) {
       message_sent: true,
     });
 
-    // 4c. Extract and upsert topic tags (only for normal chat, not quiz)
+    // 4c. Extract and upsert subtopic tags (only for normal chat, not quiz)
     if (conversationType !== "quiz") {
-      const topics = extractTopics(message);
-      for (const topic of topics) {
+      const subtopics = extractSubtopics(message);
+      for (const sub of subtopics) {
         const { data: existing } = await supabaseAdmin
           .from("conversation_topics")
           .select("id, mention_count")
           .eq("conversation_id", conversationId)
-          .eq("topic_key", topic.topicKey)
+          .eq("topic_key", sub.topicKey)
+          .eq("subtopic_key", sub.subtopicKey)
           .single();
 
         if (existing) {
           await supabaseAdmin
             .from("conversation_topics")
             .update({
-              mention_count: existing.mention_count + topic.matchCount,
+              mention_count: existing.mention_count + sub.matchCount,
               last_mentioned_at: new Date().toISOString(),
             })
             .eq("id", existing.id);
@@ -128,10 +136,11 @@ export async function POST(request: NextRequest) {
           await supabaseAdmin.from("conversation_topics").insert({
             conversation_id: conversationId,
             user_id: user.id,
-            topic_key: topic.topicKey,
-            topic_label: topic.topicLabel,
-            category: topic.category,
-            mention_count: topic.matchCount,
+            topic_key: sub.topicKey,
+            topic_label: sub.topicLabel,
+            subtopic_key: sub.subtopicKey,
+            category: sub.category,
+            mention_count: sub.matchCount,
           });
         }
       }
@@ -217,6 +226,7 @@ export async function POST(request: NextRequest) {
         if (toolUseBlock && toolUseBlock.name === "record_quiz_score") {
           const input = toolUseBlock.input as {
             topic_key: string;
+            subtopic_key: string;
             score: number;
             feedback: string;
           };
@@ -226,12 +236,13 @@ export async function POST(request: NextRequest) {
               user_id: user.id,
               conversation_id: conversationId,
               topic_key: input.topic_key,
+              subtopic_key: input.subtopic_key,
               score: input.score,
               feedback: input.feedback,
             });
 
           if (!insertError) {
-            toolResultContent = `Score recorded: ${input.topic_key} = ${input.score}/100`;
+            toolResultContent = `Score recorded: ${input.topic_key}/${input.subtopic_key} = ${input.score}/100`;
           }
         }
 
