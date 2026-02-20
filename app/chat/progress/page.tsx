@@ -49,7 +49,13 @@ interface ConversationWithTopics {
 
 interface QuizScore {
   topic_key: string;
+  subtopic_key: string | null;
   score: number;
+}
+
+interface CoveredSubtopic {
+  topic_key: string;
+  subtopic_key: string;
 }
 
 interface DayData {
@@ -65,6 +71,7 @@ export default function ProgressPage() {
   const [weekData, setWeekData] = useState<DayData[]>([]);
   const [recentConvos, setRecentConvos] = useState<ConversationWithTopics[]>([]);
   const [quizScores, setQuizScores] = useState<QuizScore[]>([]);
+  const [coveredSubtopics, setCoveredSubtopics] = useState<CoveredSubtopic[]>([]);
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split("T")[0]
   );
@@ -110,6 +117,7 @@ export default function ProgressPage() {
       loadActivityForDate(selectedDate),
       loadRecentConversations(),
       loadQuizScores(),
+      loadCoveredSubtopics(),
     ]);
     setLoading(false);
   }
@@ -229,10 +237,27 @@ export default function ProgressPage() {
 
       const { data } = await supabase
         .from("quiz_scores")
-        .select("topic_key, score")
+        .select("topic_key, subtopic_key, score")
         .eq("user_id", user.id);
 
       if (data) setQuizScores(data);
+    } catch {}
+  }
+
+  async function loadCoveredSubtopics() {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from("conversation_topics")
+        .select("topic_key, subtopic_key")
+        .eq("user_id", user.id)
+        .not("subtopic_key", "is", null);
+
+      if (data) setCoveredSubtopics(data as CoveredSubtopic[]);
     } catch {}
   }
 
@@ -319,7 +344,7 @@ export default function ProgressPage() {
         </div>
 
         {/* Topic Coverage */}
-        <TopicCoverage topics={topics} quizScores={quizScores} />
+        <TopicCoverage topics={topics} quizScores={quizScores} coveredSubtopics={coveredSubtopics} />
 
         {/* Recent Conversations */}
         <RecentConversations conversations={recentConvos} />
