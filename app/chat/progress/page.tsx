@@ -47,6 +47,11 @@ interface ConversationWithTopics {
   topics: string[];
 }
 
+interface QuizScore {
+  topic_key: string;
+  score: number;
+}
+
 interface DayData {
   date: string;
   hours: number;
@@ -59,6 +64,7 @@ export default function ProgressPage() {
   const [activityData, setActivityData] = useState<ActivityPoint[]>([]);
   const [weekData, setWeekData] = useState<DayData[]>([]);
   const [recentConvos, setRecentConvos] = useState<ConversationWithTopics[]>([]);
+  const [quizScores, setQuizScores] = useState<QuizScore[]>([]);
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split("T")[0]
   );
@@ -103,6 +109,7 @@ export default function ProgressPage() {
       loadSessions(),
       loadActivityForDate(selectedDate),
       loadRecentConversations(),
+      loadQuizScores(),
     ]);
     setLoading(false);
   }
@@ -213,6 +220,22 @@ export default function ProgressPage() {
     } catch {}
   }
 
+  async function loadQuizScores() {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from("quiz_scores")
+        .select("topic_key, score")
+        .eq("user_id", user.id);
+
+      if (data) setQuizScores(data);
+    } catch {}
+  }
+
   async function loadRecentConversations() {
     try {
       const { data: convos } = await supabase
@@ -296,7 +319,7 @@ export default function ProgressPage() {
         </div>
 
         {/* Topic Coverage */}
-        <TopicCoverage topics={topics} />
+        <TopicCoverage topics={topics} quizScores={quizScores} />
 
         {/* Recent Conversations */}
         <RecentConversations conversations={recentConvos} />

@@ -173,6 +173,11 @@ export function extractTopics(text: string): TopicMatch[] {
   return matches;
 }
 
+/** All topic keys across the taxonomy, for use in tool parameter validation */
+export const TOPIC_KEYS: string[] = Object.values(H2_ECONOMICS_TOPICS).flatMap(
+  (cat) => Object.keys(cat.topics)
+);
+
 /** Get the total number of topics in the taxonomy */
 export function getTotalTopicCount(): number {
   let count = 0;

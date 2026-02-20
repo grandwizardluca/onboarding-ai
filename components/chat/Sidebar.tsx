@@ -34,6 +34,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     const { data } = await supabase
       .from("conversations")
       .select("id, title, updated_at")
+      .neq("type", "quiz")
       .order("updated_at", { ascending: false });
 
     if (data) setConversations(data);
@@ -57,6 +58,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       router.push(`/chat/${data.id}`);
       onClose();
     }
+  }
+
+  async function handleQuizMode() {
+    const res = await fetch("/api/conversations/quiz", { method: "POST" });
+    if (!res.ok) return;
+    const { conversationId } = await res.json();
+    router.push(`/chat/${conversationId}`);
+    onClose();
   }
 
   function handleSelect(id: string) {
@@ -111,6 +120,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           >
             My Progress
           </Link>
+          <button
+            onClick={handleQuizMode}
+            className="mt-1 w-full rounded-md border border-accent/60 bg-accent/10 px-3 py-2 text-sm font-medium text-accent transition-all duration-300 hover:bg-accent/20 hover:border-accent"
+          >
+            Quiz Mode
+          </button>
         </div>
 
         {/* Conversation list */}
