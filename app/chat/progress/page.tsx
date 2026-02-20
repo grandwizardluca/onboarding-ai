@@ -63,8 +63,29 @@ export default function ProgressPage() {
     new Date().toISOString().split("T")[0]
   );
   const [loading, setLoading] = useState(true);
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   const supabase = createClient();
+
+  async function handleExportPdf() {
+    setExportingPdf(true);
+    try {
+      const res = await fetch("/api/progress/export-pdf");
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `socratic-study-report-${new Date().toISOString().split("T")[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      alert("Failed to generate PDF. Please try again.");
+    }
+    setExportingPdf(false);
+  }
 
   useEffect(() => {
     loadAll();
@@ -236,28 +257,12 @@ export default function ProgressPage() {
       <div className="flex items-center justify-between mb-6 print-hidden">
         <h2 className="font-serif text-2xl font-bold">My Progress</h2>
         <button
-          onClick={() => window.print()}
-          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-background hover:bg-accent/90 transition-colors"
+          onClick={handleExportPdf}
+          disabled={exportingPdf}
+          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-background hover:bg-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Export PDF
+          {exportingPdf ? "Generating PDF..." : "Export PDF"}
         </button>
-      </div>
-
-      {/* Print-only header */}
-      <div className="hidden print-only mb-6">
-        <h1 className="text-2xl font-bold">
-          Socratic.sg — Study Activity Report
-        </h1>
-        <p className="text-sm text-gray-600 mt-1">
-          Date: {selectedDate} | Generated on{" "}
-          {new Date().toLocaleDateString()}
-        </p>
-      </div>
-
-      {/* Print-only footer (shown at bottom of print) */}
-      <div className="hidden print-only fixed bottom-4 left-0 right-0 text-center text-xs text-gray-500">
-        This report shows genuine engagement metrics including mouse activity,
-        keyboard activity, and question frequency.
       </div>
 
       <div className="space-y-6">
