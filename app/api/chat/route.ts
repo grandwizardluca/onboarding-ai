@@ -13,7 +13,7 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const QUIZ_SYSTEM_PROMPT = `You are a Socratic tutor in quiz mode. The student has completed study sessions on H2 Economics topics. Your role:
+const QUIZ_SYSTEM_PROMPT_FALLBACK = `You are a Socratic tutor in quiz mode. The student has completed study sessions on H2 Economics topics. Your role:
 
 1. Generate ONE comprehension question testing deep understanding — scenario-based application questions, NOT definition recall.
 2. After the student answers, evaluate their response 0-100 based on accuracy, depth of reasoning, and application of concepts.
@@ -163,6 +163,17 @@ export async function POST(request: NextRequest) {
     // QUIZ MODE BRANCH
     // ──────────────────────────────────────────────────
     if (conversationType === "quiz") {
+      // Load quiz system prompt from DB, fall back to hardcoded default
+      const { data: promptRow } = await supabaseAdmin
+        .from("system_prompts")
+        .select("quiz_system_prompt")
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      const baseQuizPrompt =
+        promptRow?.quiz_system_prompt?.trim() || QUIZ_SYSTEM_PROMPT_FALLBACK;
+
       // Build context from all non-quiz conversations for this user
       const { data: otherConvos } = await supabaseAdmin
         .from("conversations")
@@ -197,7 +208,7 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      const quizSystemPrompt = QUIZ_SYSTEM_PROMPT + learningContext;
+      const quizSystemPrompt = baseQuizPrompt + learningContext;
 
       // Non-streaming call with tool support
       const response1 = await anthropic.messages.create({

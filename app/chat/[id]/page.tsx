@@ -172,7 +172,8 @@ export default function ConversationPage() {
       <MessageList
         messages={messages}
         streamingContent={streamingContent}
-        isLoading={sending && !streamingContent}
+        isLoading={!isQuizMode && sending && !streamingContent}
+        quizLoading={isQuizMode && sending && !streamingContent}
       />
       {chatDisabled ? (
         <div className="border-t border-foreground/10 px-4 py-4 text-center">

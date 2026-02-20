@@ -9,7 +9,7 @@ const supabase = createClient(
 export async function GET() {
   const { data, error } = await supabase
     .from("system_prompts")
-    .select("id, content, updated_at")
+    .select("id, content, quiz_system_prompt, updated_at")
     .order("updated_at", { ascending: false })
     .limit(1)
     .single();
@@ -25,7 +25,7 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
-  const { content } = await request.json();
+  const { content, quiz_system_prompt } = await request.json();
 
   if (!content || !content.trim()) {
     return NextResponse.json(
@@ -42,10 +42,18 @@ export async function PUT(request: NextRequest) {
     .limit(1)
     .single();
 
+  const updatePayload: Record<string, unknown> = {
+    content,
+    updated_at: new Date().toISOString(),
+  };
+  if (quiz_system_prompt !== undefined) {
+    updatePayload.quiz_system_prompt = quiz_system_prompt;
+  }
+
   if (existing) {
     const { error } = await supabase
       .from("system_prompts")
-      .update({ content, updated_at: new Date().toISOString() })
+      .update(updatePayload)
       .eq("id", existing.id);
 
     if (error) {
@@ -57,7 +65,7 @@ export async function PUT(request: NextRequest) {
   } else {
     const { error } = await supabase
       .from("system_prompts")
-      .insert({ content });
+      .insert({ content, quiz_system_prompt });
 
     if (error) {
       return NextResponse.json(
