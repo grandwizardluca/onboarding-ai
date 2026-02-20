@@ -81,12 +81,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       )}
 
       <aside
-        className={`fixed top-0 left-0 z-40 h-full w-[260px] flex-shrink-0 flex flex-col border-r border-white/[0.08] glass-nav transition-transform duration-300 md:relative md:translate-x-0 ${
+        className={`fixed top-0 left-0 z-40 h-full w-[260px] flex-shrink-0 flex flex-col border-r border-ui glass-nav transition-transform duration-300 md:relative md:translate-x-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* Header */}
-        <div className="p-4 border-b border-white/[0.08]">
+        <div className="p-4 border-b border-ui">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-serif text-lg font-bold gradient-text">Socratic.sg</h2>
             <ThemeToggle />
@@ -105,8 +105,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             onClick={onClose}
             className={`mt-2 block w-full rounded-md px-3 py-2 text-sm transition-all duration-300 ${
               pathname === "/chat/progress"
-                ? "bg-white/[0.08] text-foreground"
-                : "text-foreground/50 hover:text-foreground hover:bg-white/[0.05]"
+                ? "bg-ui-2 text-foreground"
+                : "text-foreground/50 hover:text-foreground hover-bg-ui-1"
             }`}
           >
             My Progress
@@ -133,7 +133,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 className={`w-full text-left rounded-md px-3 py-2 text-sm truncate mb-0.5 transition-all duration-200 ${
                   activeId === conv.id
                     ? "bg-ui-2 text-foreground border-l-2 border-accent/60 pl-2.5"
-                    : "text-foreground/70 hover:bg-ui-1 hover:text-foreground"
+                    : "text-foreground/70 hover-bg-ui-1 hover:text-foreground"
                 }`}
               >
                 {conv.title}
@@ -143,10 +143,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
 
         {/* Logout */}
-        <div className="p-4 border-t border-white/[0.08]">
+        <div className="p-4 border-t border-ui">
           <button
             onClick={handleLogout}
-            className="w-full rounded-md px-3 py-2 text-sm text-foreground/50 transition-all duration-300 hover:text-foreground hover:bg-white/[0.05]"
+            className="w-full rounded-md px-3 py-2 text-sm text-foreground/50 transition-all duration-300 hover:text-foreground hover-bg-ui-1"
           >
             Sign Out
           </button>

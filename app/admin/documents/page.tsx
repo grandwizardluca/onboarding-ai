@@ -91,7 +91,7 @@ export default function DocumentsPage() {
       <h2 className="font-serif text-2xl font-bold mb-6">Documents</h2>
 
       {/* Upload area */}
-      <div className="rounded-lg border border-dashed border-ui bg-ui-1 p-8 mb-6 text-center transition-all duration-300 hover:border-ui-strong hover:bg-ui-2">
+      <div className="rounded-lg border border-dashed border-ui bg-ui-1 p-8 mb-6 text-center transition-all duration-300 hover-border-ui-strong hover-bg-ui-2">
         <p className="text-foreground/50 text-sm mb-4">
           Upload a PDF or text file to add to the knowledge base
         </p>

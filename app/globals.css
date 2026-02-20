@@ -239,6 +239,12 @@ body {
   background-color: var(--ui-bg-1);
 }
 
+/* Explicit hover-state classes — needed because Tailwind v4 does not generate
+   hover: variants for utilities defined in @layer utilities. */
+.hover-bg-ui-1:hover { background-color: var(--ui-bg-1); }
+.hover-bg-ui-2:hover { background-color: var(--ui-bg-2); }
+.hover-border-ui-strong:hover { border-color: var(--ui-border-strong); }
+
 /* Print styles */
 @media print {
   .print-hidden { display: none !important; }

@@ -25,7 +25,7 @@ export default function AdminLayout({
       <div className="h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
 
       {/* Frosted glass navigation */}
-      <nav className="sticky top-0 z-50 glass-nav border-b border-white/[0.08] px-4 sm:px-6 py-3">
+      <nav className="sticky top-0 z-50 glass-nav border-b border-ui px-4 sm:px-6 py-3">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between mb-2 sm:mb-0">
             <h1 className="font-serif text-lg font-bold">
@@ -38,7 +38,7 @@ export default function AdminLayout({
               <ThemeToggle />
               <Link
                 href="/chat"
-                className="rounded-md px-3 py-1.5 text-sm text-foreground/40 transition-all duration-300 hover:text-foreground hover:bg-ui-2"
+                className="rounded-md px-3 py-1.5 text-sm text-foreground/40 transition-all duration-300 hover:text-foreground hover-bg-ui-2"
               >
                 ← Back to Chat
               </Link>
@@ -58,7 +58,7 @@ export default function AdminLayout({
                   className={`rounded-md px-3 py-1.5 text-sm whitespace-nowrap transition-all duration-300 ${
                     isActive
                       ? "bg-ui-2 text-foreground border border-ui-strong"
-                      : "text-foreground/55 hover:text-foreground hover:bg-ui-2 border border-transparent"
+                      : "text-foreground/55 hover:text-foreground hover-bg-ui-2 border border-transparent"
                   }`}
                 >
                   {item.label}
