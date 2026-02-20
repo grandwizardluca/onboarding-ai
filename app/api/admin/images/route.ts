@@ -105,7 +105,11 @@ export async function POST(request: NextRequest) {
     if (dbError) {
       // Clean up the uploaded file if DB insert fails
       await supabaseAdmin.storage.from("ui-images").remove([filePath]);
-      return NextResponse.json({ error: "DB insert failed" }, { status: 500 });
+      console.error("DB insert error:", dbError);
+      return NextResponse.json(
+        { error: `DB error: ${dbError.message}` },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ id: row.id, url: getPublicUrl(filePath) });
@@ -150,7 +154,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
     }
 
-    await supabaseAdmin.from("ui_settings").update(update).eq("id", 1);
+    // Upsert so this works even if the seed row (id=1) was never inserted
+    const { error: settingsError } = await supabaseAdmin
+      .from("ui_settings")
+      .upsert({ id: 1, ...update }, { onConflict: "id" });
+
+    if (settingsError) {
+      console.error("Settings upsert error:", settingsError);
+      return NextResponse.json(
+        { error: `Settings error: ${settingsError.message}` },
+        { status: 500 }
+      );
+    }
     return NextResponse.json({ success: true });
   }
 
