@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { H2_ECONOMICS_TOPICS, getTotalSubtopicCount } from "@/lib/topics";
 
 interface TopicData {
@@ -27,10 +28,14 @@ interface TopicCoverageProps {
   coveredSubtopics?: CoveredSubtopic[];
 }
 
+type SubtopicEntry = { label: string; keywords: readonly string[] };
+
 export default function TopicCoverage({
   quizScores = [],
   coveredSubtopics = [],
 }: TopicCoverageProps) {
+  const [expandedTopic, setExpandedTopic] = useState<string | null>(null);
+
   // Set of "topic_key/subtopic_key" for O(1) lookup
   const coveredSet = new Set(
     coveredSubtopics.map((s) => `${s.topic_key}/${s.subtopic_key}`)
@@ -53,6 +58,12 @@ export default function TopicCoverage({
     if (avg >= 75) masteredSet.add(key);
   }
 
+  function getSubtopicAvg(key: string): number | null {
+    const scores = subtopicScoreMap.get(key);
+    if (!scores || scores.length === 0) return null;
+    return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+  }
+
   function getTopicStats(topicKey: string, subtopicKeys: string[]) {
     const total = subtopicKeys.length;
     let covered = 0;
@@ -65,6 +76,56 @@ export default function TopicCoverage({
     const coveredPct = total > 0 ? Math.round((covered / total) * 100) : 0;
     const masteredPct = total > 0 ? Math.round((mastered / total) * 100) : 0;
     return { total, covered, mastered, coveredPct, masteredPct };
+  }
+
+  function renderSubtopicRow(topicKey: string, subtopicKey: string, subtopic: SubtopicEntry) {
+    const key = `${topicKey}/${subtopicKey}`;
+    const isCovered = coveredSet.has(key);
+    const isMastered = masteredSet.has(key);
+    const avg = getSubtopicAvg(key);
+
+    let statusLabel: string;
+    let statusColor: string;
+    if (isMastered) {
+      statusLabel = "Mastered";
+      statusColor = "text-green-500";
+    } else if (isCovered) {
+      statusLabel = "Covered";
+      statusColor = "text-amber-500";
+    } else {
+      statusLabel = "Not started";
+      statusColor = "text-foreground/30";
+    }
+
+    return (
+      <div key={subtopicKey} className="flex items-center gap-3 py-1.5">
+        {/* Status dot */}
+        <div
+          className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+          style={{
+            backgroundColor: isMastered
+              ? "#22c55e"
+              : isCovered
+              ? "#d4a017"
+              : "rgba(240,244,255,0.15)",
+          }}
+        />
+        {/* Name */}
+        <span className="text-xs text-foreground/70 flex-1 min-w-0">
+          {subtopic.label}
+        </span>
+        {/* Quiz avg */}
+        {avg !== null && (
+          <span className={`text-xs font-mono flex-shrink-0 ${isMastered ? "text-green-500" : "text-foreground/40"}`}>
+            {avg}%
+          </span>
+        )}
+        {/* Status */}
+        <span className={`text-xs flex-shrink-0 w-20 text-right ${statusColor}`}>
+          {statusLabel}
+        </span>
+      </div>
+    );
   }
 
   function renderCategory(
@@ -84,47 +145,77 @@ export default function TopicCoverage({
             const subtopicKeys = Object.keys(topic.subtopics);
             const { total, covered, mastered, coveredPct, masteredPct } =
               getTopicStats(topicKey, subtopicKeys);
+            const isExpanded = expandedTopic === topicKey;
 
             return (
               <div key={topicKey}>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-foreground/70">{topic.label}</span>
-                  <span className="flex items-center gap-1.5">
-                    {covered === 0 ? (
-                      <span className="text-foreground/30">Not started</span>
-                    ) : (
-                      <>
-                        <span className="text-foreground/50">
-                          {covered}/{total}
-                        </span>
-                        {mastered > 0 ? (
-                          <span className="text-green-500">
-                            ({mastered} mastered)
+                {/* Clickable topic row */}
+                <button
+                  className="w-full text-left group"
+                  onClick={() =>
+                    setExpandedTopic(isExpanded ? null : topicKey)
+                  }
+                >
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-foreground/70 group-hover:text-foreground/90 transition-colors flex items-center gap-1">
+                      <span
+                        className="inline-block transition-transform duration-200"
+                        style={{
+                          transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)",
+                          fontSize: "0.6rem",
+                          opacity: 0.4,
+                        }}
+                      >
+                        ▶
+                      </span>
+                      {topic.label}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      {covered === 0 ? (
+                        <span className="text-foreground/30">Not started</span>
+                      ) : (
+                        <>
+                          <span className="text-foreground/50">
+                            {covered}/{total}
                           </span>
-                        ) : (
-                          <span className="text-foreground/30">subtopics</span>
-                        )}
-                      </>
+                          {mastered > 0 ? (
+                            <span className="text-green-500">
+                              ({mastered} mastered)
+                            </span>
+                          ) : (
+                            <span className="text-foreground/30">subtopics</span>
+                          )}
+                        </>
+                      )}
+                    </span>
+                  </div>
+                  {/* Two-color stacked bar */}
+                  <div className="h-2 rounded-full bg-foreground/5 relative overflow-hidden">
+                    {coveredPct > 0 && (
+                      <div
+                        className="absolute inset-y-0 left-0 transition-all duration-500"
+                        style={{ width: `${coveredPct}%`, backgroundColor: "#d4a017" }}
+                      />
                     )}
-                  </span>
-                </div>
-                {/* Two-color stacked bar */}
-                <div className="h-2 rounded-full bg-foreground/5 relative overflow-hidden">
-                  {/* Amber layer: all covered subtopics */}
-                  {coveredPct > 0 && (
-                    <div
-                      className="absolute inset-y-0 left-0 transition-all duration-500"
-                      style={{ width: `${coveredPct}%`, backgroundColor: "#d4a017" }}
-                    />
-                  )}
-                  {/* Green layer on top: mastered subtopics */}
-                  {masteredPct > 0 && (
-                    <div
-                      className="absolute inset-y-0 left-0 transition-all duration-500"
-                      style={{ width: `${masteredPct}%`, backgroundColor: "#22c55e" }}
-                    />
-                  )}
-                </div>
+                    {masteredPct > 0 && (
+                      <div
+                        className="absolute inset-y-0 left-0 transition-all duration-500"
+                        style={{ width: `${masteredPct}%`, backgroundColor: "#22c55e" }}
+                      />
+                    )}
+                  </div>
+                </button>
+
+                {/* Drill-down subtopic list */}
+                {isExpanded && (
+                  <div className="mt-2 ml-3 pl-3 border-l border-foreground/10 divide-y divide-foreground/5">
+                    {subtopicKeys.map((sk) => {
+                      const rawSubtopic = topic.subtopics[sk];
+                      const subtopic = rawSubtopic as SubtopicEntry;
+                      return renderSubtopicRow(topicKey, sk, subtopic);
+                    })}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -172,6 +263,7 @@ export default function TopicCoverage({
           <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: "#22c55e" }} />
           Mastered (quiz ≥75%)
         </div>
+        <div className="text-xs text-foreground/30 ml-auto">Click a topic to expand</div>
       </div>
     </div>
   );
