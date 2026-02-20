@@ -1,16 +1,26 @@
 @import "tailwindcss";
 
 :root {
-  /* Dark mode (default) */
+  /* ── Core theme tokens ── */
   --background: #111111;
   --foreground: #f1f1f1;
   --accent: #f1f1f1;
   --muted: #a1a1a1;
   --user-bubble: #1e1e1e;
   --admin-bg: #0a0a0a;
+
+  /* ── Adaptive UI overlay colours (flip per theme) ── */
+  --ui-bg-1: rgba(255, 255, 255, 0.03);   /* subtle card bg */
+  --ui-bg-2: rgba(255, 255, 255, 0.07);   /* hover bg */
+  --ui-bg-3: rgba(255, 255, 255, 0.11);   /* strong hover bg */
+  --ui-border: rgba(255, 255, 255, 0.09); /* default border */
+  --ui-border-strong: rgba(255, 255, 255, 0.32); /* hover border */
+  --ui-shadow: 0 4px 32px rgba(255, 255, 255, 0.11);
+  --ui-shadow-sm: 0 2px 14px rgba(255, 255, 255, 0.07);
+  --ui-ring: 0 0 0 1px rgba(255, 255, 255, 0.13);
 }
 
-/* ── Light mode overrides ── */
+/* ── Light mode: full inversion ── */
 [data-theme="light"] {
   --background: #ffffff;
   --foreground: #111111;
@@ -18,6 +28,15 @@
   --muted: #555555;
   --user-bubble: #e0e0e0;
   --admin-bg: #ffffff;
+
+  --ui-bg-1: rgba(0, 0, 0, 0.04);
+  --ui-bg-2: rgba(0, 0, 0, 0.08);
+  --ui-bg-3: rgba(0, 0, 0, 0.12);
+  --ui-border: rgba(0, 0, 0, 0.13);
+  --ui-border-strong: rgba(0, 0, 0, 0.28);
+  --ui-shadow: 0 4px 32px rgba(0, 0, 0, 0.10);
+  --ui-shadow-sm: 0 2px 14px rgba(0, 0, 0, 0.07);
+  --ui-ring: 0 0 0 1px rgba(0, 0, 0, 0.14);
 }
 
 @theme inline {
@@ -130,7 +149,7 @@ body {
 
 [data-theme="light"] .glass-card {
   background: rgba(0, 0, 0, 0.03);
-  border-color: rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 0, 0, 0.10);
 }
 [data-theme="light"] .glass-card:hover {
   background: rgba(0, 0, 0, 0.06);
@@ -144,8 +163,9 @@ body {
   -webkit-backdrop-filter: blur(14px);
 }
 [data-theme="light"] .glass-nav {
-  background: rgba(247, 247, 247, 0.92);
-  border-color: rgba(0, 0, 0, 0.08) !important;
+  background: rgba(255, 255, 255, 0.97);
+  border-color: rgba(0, 0, 0, 0.10) !important;
+  box-shadow: 0 1px 16px rgba(0, 0, 0, 0.07);
 }
 
 /* Loading dots */
@@ -187,73 +207,36 @@ body {
   background-size: 400px 100%;
 }
 
-/* ── Light mode: flip white-based transparent overlays to dark-based ──
-   Tailwind hardcodes rgba(255,255,255,x) for white/* classes — on a white
-   background these vanish completely. These overrides swap them to
-   rgba(0,0,0,x) so borders and hover states remain visible. */
+/* ── Adaptive UI utilities — use these instead of bg-white/[x] ──
+   These CSS vars flip automatically between dark and light themes.  */
 
-/* Glass nav in light mode: visible white card with subtle shadow */
-[data-theme="light"] .glass-nav {
-  background: rgba(255, 255, 255, 0.97) !important;
-  box-shadow: 0 1px 16px rgba(0, 0, 0, 0.07);
-}
-
-/* Admin shimmer bar in light mode: swap to dark */
-[data-theme="light"] .via-white\/40 {
-  --tw-gradient-via: rgba(0, 0, 0, 0.15) !important;
+@layer utilities {
+  /* Backgrounds */
+  .bg-ui-1 { background-color: var(--ui-bg-1); }
+  .bg-ui-2 { background-color: var(--ui-bg-2); }
+  .bg-ui-3 { background-color: var(--ui-bg-3); }
+  /* Borders */
+  .border-ui { border-color: var(--ui-border); }
+  .border-ui-strong { border-color: var(--ui-border-strong); }
 }
 
-/* Borders */
-[data-theme="light"] .border-white\/\[0\.05\]  { border-color: rgba(0, 0, 0, 0.10) !important; }
-[data-theme="light"] .border-white\/\[0\.08\]  { border-color: rgba(0, 0, 0, 0.14) !important; }
-[data-theme="light"] .border-white\/\[0\.12\]  { border-color: rgba(0, 0, 0, 0.16) !important; }
-[data-theme="light"] .border-white\/\[0\.15\]  { border-color: rgba(0, 0, 0, 0.16) !important; }
-
-/* Backgrounds — raised so cards are visible on white */
-[data-theme="light"] .bg-white\/\[0\.02\] { background-color: rgba(0, 0, 0, 0.04) !important; }
-[data-theme="light"] .bg-white\/\[0\.03\] { background-color: rgba(0, 0, 0, 0.05) !important; }
-[data-theme="light"] .bg-white\/\[0\.04\] { background-color: rgba(0, 0, 0, 0.05) !important; }
-[data-theme="light"] .bg-white\/\[0\.05\] { background-color: rgba(0, 0, 0, 0.06) !important; }
-[data-theme="light"] .bg-white\/\[0\.06\] { background-color: rgba(0, 0, 0, 0.06) !important; }
-[data-theme="light"] .bg-white\/\[0\.08\] { background-color: rgba(0, 0, 0, 0.08) !important; }
-[data-theme="light"] .bg-white\/\[0\.09\] { background-color: rgba(0, 0, 0, 0.09) !important; }
-[data-theme="light"] .bg-white\/\[0\.10\] { background-color: rgba(0, 0, 0, 0.09) !important; }
-
-/* Hover states */
-[data-theme="light"] .hover\:bg-white\/\[0\.03\]:hover  { background-color: rgba(0, 0, 0, 0.06) !important; }
-[data-theme="light"] .hover\:bg-white\/\[0\.04\]:hover  { background-color: rgba(0, 0, 0, 0.07) !important; }
-[data-theme="light"] .hover\:bg-white\/\[0\.05\]:hover  { background-color: rgba(0, 0, 0, 0.07) !important; }
-[data-theme="light"] .hover\:bg-white\/\[0\.08\]:hover  { background-color: rgba(0, 0, 0, 0.09) !important; }
-[data-theme="light"] .hover\:bg-white\/\[0\.10\]:hover  { background-color: rgba(0, 0, 0, 0.09) !important; }
-[data-theme="light"] .hover\:bg-white\/\[0\.12\]:hover  { background-color: rgba(0, 0, 0, 0.10) !important; }
-[data-theme="light"] .hover\:border-white\/\[0\.2\]:hover   { border-color: rgba(0, 0, 0, 0.25) !important; }
-[data-theme="light"] .hover\:border-white\/\[0\.25\]:hover  { border-color: rgba(0, 0, 0, 0.28) !important; }
-[data-theme="light"] .hover\:border-white\/\[0\.3\]:hover   { border-color: rgba(0, 0, 0, 0.30) !important; }
-[data-theme="light"] .hover\:border-white\/\[0\.35\]:hover  { border-color: rgba(0, 0, 0, 0.32) !important; }
-
-/* Hover box-shadow glows: swap white glow to dark shadow in light mode */
-[data-theme="light"] .hover\:shadow-\[0_0_0_1px_rgba\(255\2c255\2c255\2c0\.12\)\]:hover {
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15) !important;
+/* Interactive card: full adaptive hover (bg + border + shadow + lift) */
+.ui-card {
+  background-color: var(--ui-bg-1);
+  border: 1px solid var(--ui-border);
+  transition: background-color 0.3s ease, border-color 0.3s ease,
+              box-shadow 0.3s ease, transform 0.3s ease;
 }
-[data-theme="light"] .hover\:shadow-\[0_0_10px_rgba\(255\2c255\2c255\2c0\.04\)\]:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.10) !important;
-}
-[data-theme="light"] .hover\:shadow-\[0_0_14px_rgba\(255\2c255\2c255\2c0\.15\)\]:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
-}
-[data-theme="light"] .hover\:shadow-\[0_0_20px_rgba\(255\2c255\2c255\2c0\.07\)\]:hover {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.10) !important;
-}
-[data-theme="light"] .hover\:shadow-\[0_4px_32px_rgba\(255\2c255\2c255\2c0\.12\)\]:hover {
-  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.12) !important;
+.ui-card:hover {
+  background-color: var(--ui-bg-3);
+  border-color: var(--ui-border-strong);
+  box-shadow: var(--ui-shadow);
+  transform: translateY(-2px);
 }
 
-/* Active/selected box-shadow rings */
-[data-theme="light"] .shadow-\[0_0_0_1px_rgba\(255\2c255\2c255\2c0\.12\)\] {
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.14) !important;
-}
-[data-theme="light"] .shadow-\[0_0_0_1px_rgba\(255\2c255\2c255\2c0\.15\)\] {
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18) !important;
+/* Row hover (no border change, just subtle bg) */
+.ui-row-hover:hover {
+  background-color: var(--ui-bg-1);
 }
 
 /* Print styles */

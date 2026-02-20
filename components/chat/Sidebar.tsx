@@ -132,8 +132,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 onClick={() => handleSelect(conv.id)}
                 className={`w-full text-left rounded-md px-3 py-2 text-sm truncate mb-0.5 transition-all duration-200 ${
                   activeId === conv.id
-                    ? "bg-white/[0.08] text-foreground border-l-2 border-accent/60 pl-2.5"
-                    : "text-foreground/70 hover:bg-white/[0.05] hover:text-foreground"
+                    ? "bg-ui-2 text-foreground border-l-2 border-accent/60 pl-2.5"
+                    : "text-foreground/70 hover:bg-ui-1 hover:text-foreground"
                 }`}
               >
                 {conv.title}

@@ -91,7 +91,7 @@ export default function DocumentsPage() {
       <h2 className="font-serif text-2xl font-bold mb-6">Documents</h2>
 
       {/* Upload area */}
-      <div className="rounded-lg border border-dashed border-white/[0.15] bg-white/[0.02] p-8 mb-6 text-center transition-all duration-300 hover:border-white/[0.3] hover:bg-white/[0.04]">
+      <div className="rounded-lg border border-dashed border-ui bg-ui-1 p-8 mb-6 text-center transition-all duration-300 hover:border-ui-strong hover:bg-ui-2">
         <p className="text-foreground/50 text-sm mb-4">
           Upload a PDF or text file to add to the knowledge base
         </p>
@@ -142,10 +142,10 @@ export default function DocumentsPage() {
           No documents uploaded yet. Upload your first document above.
         </p>
       ) : (
-        <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] overflow-hidden">
+        <div className="rounded-lg border border-ui bg-ui-1 overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/[0.08] text-foreground/40 text-left">
+              <tr className="border-b border-ui text-foreground/40 text-left">
                 <th className="px-4 py-3 font-medium">Title</th>
                 <th className="px-4 py-3 font-medium hidden sm:table-cell">File</th>
                 <th className="px-4 py-3 font-medium">Chunks</th>
@@ -157,7 +157,7 @@ export default function DocumentsPage() {
               {documents.map((doc) => (
                 <tr
                   key={doc.id}
-                  className="border-b border-white/[0.05] last:border-0 transition-colors duration-200 hover:bg-white/[0.03]"
+                  className="border-b border-ui last:border-0 transition-colors duration-200 ui-row-hover"
                 >
                   <td className="px-4 py-3">{doc.title}</td>
                   <td className="px-4 py-3 text-foreground/50 hidden sm:table-cell">

@@ -78,7 +78,7 @@ export default function ConversationsPage() {
                 className={`w-full text-left rounded-lg border px-4 py-3 transition-all duration-300 ${
                   selectedId === conv.id
                     ? "border-accent/50 bg-accent/[0.06] shadow-[0_0_12px_rgba(255,255,255,0.05)]"
-                    : "border-white/[0.08] bg-white/[0.02] hover:border-white/[0.2] hover:bg-white/[0.05] hover:shadow-[0_0_10px_rgba(255,255,255,0.04)]"
+                    : "border-ui bg-ui-1 hover:border-ui-strong hover:bg-ui-2"
                 }`}
               >
                 <div className="flex items-center justify-between">

@@ -87,7 +87,7 @@ export default function PromptPage() {
       <textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        className="w-full rounded-lg border border-white/[0.12] bg-background px-4 py-3 text-sm text-foreground font-mono leading-relaxed outline-none transition-[border-color,box-shadow] duration-300 focus:border-foreground/40 focus:shadow-[0_0_0_1px_rgba(255,255,255,0.1)] resize-y"
+        className="w-full rounded-lg border border-ui bg-background px-4 py-3 text-sm text-foreground font-mono leading-relaxed outline-none transition-[border-color,box-shadow] duration-300 focus:border-foreground/40 resize-y"
         style={{ minHeight: "400px" }}
       />
     </div>

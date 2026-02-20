@@ -84,10 +84,10 @@ export default function AdminAnalyticsPage() {
       {students.length === 0 ? (
         <p className="text-foreground/40 text-sm">No students found.</p>
       ) : (
-        <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] overflow-hidden">
+        <div className="rounded-lg border border-ui bg-ui-1 overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-white/[0.08] text-left text-xs text-foreground/50">
+              <tr className="border-b border-ui text-left text-xs text-foreground/50">
                 <th className="px-4 py-3">Student</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3 hidden sm:table-cell">
@@ -104,7 +104,7 @@ export default function AdminAnalyticsPage() {
                 return (
                   <tr
                     key={student.user_id}
-                    className="border-b border-white/[0.05] last:border-0 transition-all duration-200 hover:bg-white/[0.04]"
+                    className="border-b border-ui last:border-0 transition-all duration-200 ui-row-hover"
                   >
                     <td className="px-4 py-3">
                       <Link
