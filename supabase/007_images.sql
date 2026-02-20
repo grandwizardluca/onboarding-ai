@@ -20,8 +20,8 @@ CREATE TABLE IF NOT EXISTS public.ui_images (
 
 ALTER TABLE public.ui_images ENABLE ROW LEVEL SECURITY;
 
--- Any authenticated user can read (needed by student sidebar/layout)
-CREATE POLICY IF NOT EXISTS "Authenticated read ui_images"
+DROP POLICY IF EXISTS "Authenticated read ui_images" ON public.ui_images;
+CREATE POLICY "Authenticated read ui_images"
   ON public.ui_images FOR SELECT
   USING (auth.uid() IS NOT NULL);
 
@@ -36,8 +36,8 @@ CREATE TABLE IF NOT EXISTS public.ui_settings (
 
 ALTER TABLE public.ui_settings ENABLE ROW LEVEL SECURITY;
 
--- Any authenticated user can read
-CREATE POLICY IF NOT EXISTS "Authenticated read ui_settings"
+DROP POLICY IF EXISTS "Authenticated read ui_settings" ON public.ui_settings;
+CREATE POLICY "Authenticated read ui_settings"
   ON public.ui_settings FOR SELECT
   USING (auth.uid() IS NOT NULL);
 
