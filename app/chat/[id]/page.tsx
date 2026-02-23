@@ -108,16 +108,29 @@ export default function ConversationPage() {
       let fullResponse = "";
 
       if (reader) {
+        let chunkCount = 0;
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
 
+          chunkCount++;
           const chunk = decoder.decode(value, { stream: true });
           fullResponse += chunk;
+          console.log(`[Chat] chunk #${chunkCount}: ${chunk.length} chars, total: ${fullResponse.length}`);
           setStreamingContent(fullResponse);
         }
+        // Flush any bytes held in the decoder buffer for multi-byte chars
+        const remaining = decoder.decode();
+        if (remaining) {
+          fullResponse += remaining;
+          console.log(`[Chat] decoder flush: ${remaining.length} extra chars`);
+        }
+        console.log(`[Chat] stream closed. fullResponse.length = ${fullResponse.length}`);
+      } else {
+        console.warn("[Chat] response.body reader is null");
       }
 
+      console.log(`[Chat] setting assistant message, content.length = ${fullResponse.length}`);
       setStreamingContent("");
       const assistantMsg: Message = {
         id: crypto.randomUUID(),
