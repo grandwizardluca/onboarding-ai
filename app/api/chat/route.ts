@@ -7,6 +7,15 @@ import { extractSubtopics, TOPIC_KEYS, SUBTOPIC_KEYS } from "@/lib/topics";
 
 export const runtime = "nodejs";
 
+function sanitizeMessage(text: string): string {
+  return text
+    .replace(/[\u2018\u2019]/g, "'")        // Smart single quotes → straight
+    .replace(/[\u201C\u201D]/g, '"')        // Smart double quotes → straight
+    .replace(/[\u2013\u2014]/g, '-')        // Em/en dashes → hyphen
+    .replace(/[\u2026]/g, '...')            // Ellipsis → three dots
+    .replace(/[\u200B-\u200D\uFEFF]/g, ''); // Zero-width chars → removed
+}
+
 // Service role client for DB operations that bypass RLS
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -81,11 +90,13 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Parse request body
-    const { conversationId, message } = await request.json();
+    const { conversationId, message: rawMessage } = await request.json();
 
-    if (!conversationId || !message) {
+    if (!conversationId || !rawMessage) {
       return new Response("Missing conversationId or message", { status: 400 });
     }
+
+    const message = sanitizeMessage(rawMessage);
 
     // 3. Fetch the conversation to determine its type
     const { data: convData } = await supabaseAdmin
@@ -154,10 +165,12 @@ export async function POST(request: NextRequest) {
       .order("created_at", { ascending: true })
       .limit(20);
 
-    const conversationHistory = (historyData || []).map((msg) => ({
-      role: msg.role as "user" | "assistant",
-      content: msg.content,
-    }));
+    const conversationHistory = (historyData || [])
+      .filter((msg) => msg.content && msg.content.trim().length > 0)
+      .map((msg) => ({
+        role: msg.role as "user" | "assistant",
+        content: sanitizeMessage(msg.content),
+      }));
 
     // ──────────────────────────────────────────────────
     // QUIZ MODE BRANCH

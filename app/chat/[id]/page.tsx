@@ -23,6 +23,7 @@ export default function ConversationPage() {
   const [streamingContent, setStreamingContent] = useState("");
   const [chatDisabled, setChatDisabled] = useState(false);
   const [isQuizMode, setIsQuizMode] = useState(false);
+  const [conversationTitle, setConversationTitle] = useState("Conversation");
   const supabase = createClient();
 
   useEffect(() => {
@@ -49,7 +50,7 @@ export default function ConversationPage() {
     const [{ data: convData }, { data: msgData }] = await Promise.all([
       supabase
         .from("conversations")
-        .select("type")
+        .select("type, title")
         .eq("id", conversationId)
         .single(),
       supabase
@@ -61,6 +62,7 @@ export default function ConversationPage() {
 
     const isQuiz = convData?.type === "quiz";
     setIsQuizMode(isQuiz);
+    if (convData?.title) setConversationTitle(convData.title);
 
     const realMessages = (msgData as Message[]) ?? [];
 
@@ -159,6 +161,28 @@ export default function ConversationPage() {
     setSending(false);
   }
 
+  function handleExport() {
+    const exportable = messages.filter((m) => m.id !== "quiz-welcome");
+    if (exportable.length === 0) return;
+
+    const lines = exportable.map((m) => {
+      const speaker = m.role === "user" ? "You" : "Socratic";
+      return `${speaker}:\n${m.content.trim()}`;
+    });
+
+    const header = `${conversationTitle}\nExported from Socratic.sg — ${new Date().toLocaleDateString("en-SG", { day: "numeric", month: "long", year: "numeric" })}\n`;
+    const body = lines.join("\n\n");
+    const fullText = `${header}\n${body}\n`;
+
+    const blob = new Blob([fullText], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${conversationTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   if (loading) {
     return (
       <div className="flex flex-1 items-center justify-center">
@@ -176,17 +200,35 @@ export default function ConversationPage() {
 
   return (
     <div className="flex flex-1 flex-col min-h-0">
-      {/* Quiz Mode header badge */}
-      {isQuizMode && (
-        <div className="flex items-center gap-2 border-b border-foreground/10 px-4 py-2 shrink-0">
-          <span className="rounded-full bg-accent/20 border border-accent/60 px-3 py-0.5 text-xs font-semibold text-accent tracking-wide">
-            Quiz Mode
-          </span>
-          <span className="text-xs text-foreground/40">
-            Answers are scored and tracked in My Progress
-          </span>
+      {/* Top bar: quiz badge (left) + export button (right) */}
+      <div className="flex items-center justify-between border-b border-foreground/10 px-4 py-2 shrink-0">
+        <div className="flex items-center gap-2">
+          {isQuizMode && (
+            <>
+              <span className="rounded-full bg-accent/20 border border-accent/60 px-3 py-0.5 text-xs font-semibold text-accent tracking-wide">
+                Quiz Mode
+              </span>
+              <span className="text-xs text-foreground/40">
+                Answers are scored and tracked in My Progress
+              </span>
+            </>
+          )}
         </div>
-      )}
+        {messages.filter((m) => m.id !== "quiz-welcome").length > 0 && (
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-1.5 rounded px-3 py-1 text-xs text-foreground/50 hover:text-foreground/80 hover:bg-foreground/5 transition-colors"
+            title="Export conversation as .txt"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Export
+          </button>
+        )}
+      </div>
       <MessageList
         messages={messages}
         streamingContent={streamingContent}
