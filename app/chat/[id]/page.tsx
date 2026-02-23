@@ -97,13 +97,18 @@ export default function ConversationPage() {
         body: JSON.stringify({ conversationId, message: content }),
       });
 
+      console.log("[Chat] response.ok:", response.ok, "status:", response.status);
+      console.log("[Chat] response.headers:", Object.fromEntries(response.headers.entries()));
+      console.log("[Chat] response.body:", response.body);
+
       if (!response.ok) {
         const errorBody = await response.text();
-        console.error("Chat API error:", response.status, errorBody);
+        console.error("[Chat] API error response:", errorBody);
         throw new Error(`Chat request failed: ${errorBody}`);
       }
 
       const reader = response.body?.getReader();
+      console.log("[Chat] reader initialized:", !!reader);
       const decoder = new TextDecoder();
       let fullResponse = "";
 
