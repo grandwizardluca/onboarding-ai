@@ -37,8 +37,39 @@ export default function DocumentsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const MAX_MB = 50;
+    const sizeMB = file.size / 1024 / 1024;
+
+    if (sizeMB > MAX_MB) {
+      showToast(
+        `File is ${sizeMB.toFixed(1)} MB — max is ${MAX_MB} MB. Try compressing in Preview → File → Export as PDF.`,
+        "error"
+      );
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
     setUploading(true);
-    setUploadProgress(`Processing "${file.name}"...`);
+
+    // For large files, rotate status messages so the admin knows processing is ongoing
+    const isLarge = sizeMB > 5;
+    const messages = isLarge
+      ? [
+          `Uploading "${file.name}" (${sizeMB.toFixed(1)} MB)…`,
+          "Parsing PDF — this may take a minute for scanned documents…",
+          "Splitting into chunks…",
+          "Generating embeddings — almost done…",
+        ]
+      : [`Processing "${file.name}"…`];
+
+    let msgIndex = 0;
+    setUploadProgress(messages[0]);
+    const ticker = isLarge
+      ? setInterval(() => {
+          msgIndex = Math.min(msgIndex + 1, messages.length - 1);
+          setUploadProgress(messages[msgIndex]);
+        }, 8000)
+      : null;
 
     const formData = new FormData();
     formData.append("file", file);
@@ -64,6 +95,7 @@ export default function DocumentsPage() {
       showToast("Upload failed. Please try again.", "error");
     }
 
+    if (ticker) clearInterval(ticker);
     setUploading(false);
     setUploadProgress("");
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -94,6 +126,9 @@ export default function DocumentsPage() {
       <div className="rounded-lg border border-dashed border-ui bg-ui-1 p-8 mb-6 text-center transition-all duration-300 hover-border-ui-strong hover-bg-ui-2">
         <p className="text-foreground/50 text-sm mb-4">
           Upload a PDF or text file to add to the knowledge base
+          <span className="block text-foreground/30 text-xs mt-0.5">
+            .pdf · .txt · .md · max 50 MB
+          </span>
         </p>
         <label
           className={`group inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-background transition-all duration-300 hover:bg-accent/85 hover:shadow-[0_0_14px_rgba(255,255,255,0.15)] cursor-pointer ${

@@ -6,6 +6,11 @@ import { generateEmbedding } from "@/lib/openai";
 // Ensure this route runs in Node.js runtime (required for pdf-parse)
 export const runtime = "nodejs";
 
+// Allow up to 60 s on Vercel so large PDFs can finish chunking + embedding
+export const maxDuration = 60;
+
+const MAX_FILE_BYTES = 50 * 1024 * 1024; // 50 MB
+
 // Service role client — admin operations bypass RLS
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -23,6 +28,16 @@ export async function POST(request: NextRequest) {
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    }
+
+    if (file.size > MAX_FILE_BYTES) {
+      const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+      return NextResponse.json(
+        {
+          error: `File too large (${sizeMB} MB). Maximum is 50 MB. Try compressing in Preview → File → Export as PDF, or split into smaller files.`,
+        },
+        { status: 400 }
+      );
     }
 
     const filename = file.name;
