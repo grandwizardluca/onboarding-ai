@@ -3,9 +3,64 @@ import { createClient } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
 import anthropic from "@/lib/anthropic";
 import { retrieveContext } from "@/lib/rag";
+import { generateEmbedding } from "@/lib/openai";
 import { extractSubtopics, TOPIC_KEYS, SUBTOPIC_KEYS } from "@/lib/topics";
 
 export const runtime = "nodejs";
+
+// ── Attached-file helpers ─────────────────────────────────────────────────────
+
+interface AttachedFile {
+  name: string;
+  content: string; // plain text OR base64 string for PDFs
+  isPdf: boolean;
+}
+
+/** Split text into ~2000-char chunks (no overlap needed — just context, not indexing) */
+function chunkAttachedText(text: string): string[] {
+  const CHUNK_SIZE = 2000;
+  const chunks: string[] = [];
+  for (let i = 0; i < text.length; i += CHUNK_SIZE) {
+    chunks.push(text.slice(i, i + CHUNK_SIZE));
+  }
+  return chunks;
+}
+
+function cosineSimilarity(a: number[], b: number[]): number {
+  let dot = 0, magA = 0, magB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    magA += a[i] * a[i];
+    magB += b[i] * b[i];
+  }
+  return dot / (Math.sqrt(magA) * Math.sqrt(magB));
+}
+
+/**
+ * Chunk the attached file text, embed each chunk and the user query,
+ * return the top-3 most relevant chunks as a formatted context block.
+ */
+async function retrieveAttachedContext(fileText: string, userMessage: string, fileName: string): Promise<string> {
+  const chunks = chunkAttachedText(fileText).slice(0, 10); // cap at 10 chunks
+  if (chunks.length === 0) return "";
+
+  const [queryEmbedding, ...chunkEmbeddings] = await Promise.all([
+    generateEmbedding(userMessage),
+    ...chunks.map((c) => generateEmbedding(c)),
+  ]);
+
+  const scored = chunks.map((chunk, i) => ({
+    chunk,
+    score: cosineSimilarity(queryEmbedding, chunkEmbeddings[i]),
+  }));
+
+  scored.sort((a, b) => b.score - a.score);
+  const top3 = scored.slice(0, 3).map((s, i) => `[Attached: ${fileName} — excerpt ${i + 1}]\n${s.chunk}`);
+
+  return `The student has attached a file (${fileName}) relevant to their question. Use the excerpts below to inform your answer.\n\n${top3.join("\n\n---\n\n")}`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 function sanitizeMessage(text: string): string {
   return text
@@ -90,13 +145,17 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Parse request body
-    const { conversationId, message: rawMessage } = await request.json();
+    const { conversationId, message: rawMessage, attachedFile } = await request.json() as {
+      conversationId: string;
+      message: string;
+      attachedFile?: AttachedFile;
+    };
 
-    if (!conversationId || !rawMessage) {
+    if (!conversationId || (!rawMessage && !attachedFile)) {
       return new Response("Missing conversationId or message", { status: 400 });
     }
 
-    const message = sanitizeMessage(rawMessage);
+    const message = sanitizeMessage(rawMessage ?? "");
 
     // 3. Fetch the conversation to determine its type
     const { data: convData } = await supabaseAdmin
@@ -353,9 +412,27 @@ export async function POST(request: NextRequest) {
     // Retrieve relevant document chunks via RAG
     const ragContext = await retrieveContext(message);
 
+    // If the student attached a file, extract text and find relevant chunks
+    let attachedContext = "";
+    if (attachedFile) {
+      let fileText = "";
+      if (attachedFile.isPdf) {
+        const pdfParse = require("pdf-parse/lib/pdf-parse");
+        const buffer = Buffer.from(attachedFile.content, "base64");
+        const result = await pdfParse(buffer);
+        fileText = result.text as string;
+      } else {
+        fileText = attachedFile.content;
+      }
+      if (fileText.trim().length > 0) {
+        attachedContext = await retrieveAttachedContext(fileText, message, attachedFile.name);
+      }
+    }
+
     // Build the full system message
-    const fullSystem = ragContext
-      ? `${systemPrompt}\n\n---\n\n${ragContext}`
+    const contextParts = [ragContext, attachedContext].filter(Boolean);
+    const fullSystem = contextParts.length > 0
+      ? `${systemPrompt}\n\n---\n\n${contextParts.join("\n\n---\n\n")}`
       : systemPrompt;
 
     // Stream response from Claude

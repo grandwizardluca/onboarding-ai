@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import MessageList, { Message } from "@/components/chat/MessageList";
-import ChatInput from "@/components/chat/ChatInput";
+import ChatInput, { AttachedFile } from "@/components/chat/ChatInput";
 
 const QUIZ_WELCOME: Message = {
   id: "quiz-welcome",
@@ -76,7 +76,7 @@ export default function ConversationPage() {
     setLoading(false);
   }
 
-  async function handleSend(content: string) {
+  async function handleSend(content: string, attachedFile?: AttachedFile) {
     setSending(true);
     setStreamingContent("");
 
@@ -84,8 +84,9 @@ export default function ConversationPage() {
     const tempUserMsg: Message = {
       id: crypto.randomUUID(),
       role: "user",
-      content,
+      content: content || (attachedFile ? "(see attached file)" : ""),
       created_at: new Date().toISOString(),
+      attachedFileName: attachedFile?.name,
     };
     setMessages((prev) => {
       const filtered = prev.filter((m) => m.id !== "quiz-welcome");
@@ -96,7 +97,7 @@ export default function ConversationPage() {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversationId, message: content }),
+        body: JSON.stringify({ conversationId, message: content, attachedFile }),
       });
 
       console.log("[Chat] response.ok:", response.ok, "status:", response.status);
