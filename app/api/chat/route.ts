@@ -307,8 +307,10 @@ export async function POST(request: NextRequest) {
         .eq("id", conversationId);
 
       // Return final text as a plain stream so the UI handles it identically
+      console.log("[API] Quiz mode: finalText length =", finalText.length);
       const readableStream = new ReadableStream({
         start(controller) {
+          console.log("[API] Quiz mode: enqueueing, closing");
           controller.enqueue(new TextEncoder().encode(finalText));
           controller.close();
         },
@@ -317,7 +319,6 @@ export async function POST(request: NextRequest) {
       return new Response(readableStream, {
         headers: {
           "Content-Type": "text/plain; charset=utf-8",
-          "Transfer-Encoding": "chunked",
         },
       });
     }
@@ -356,8 +357,10 @@ export async function POST(request: NextRequest) {
     // and collects the full response for saving to DB
     let fullResponse = "";
 
+    console.log("[API] Normal chat: stream starting");
     const readableStream = new ReadableStream({
       async start(controller) {
+        console.log("[API] Normal chat: ReadableStream start() called");
         try {
           const MAX_RESPONSE_LENGTH = 6000;
           const TRUNCATION_WARNING =
@@ -383,10 +386,13 @@ export async function POST(request: NextRequest) {
                 break;
               }
 
+              const chunkNum = fullResponse.length;
+              console.log(`[API] Normal chat: enqueue chunk, text.length=${text.length}, total=${chunkNum}`);
               controller.enqueue(new TextEncoder().encode(text));
             }
           }
 
+          console.log(`[API] Normal chat: stream done, closing. fullResponse.length=${fullResponse.length}`);
           controller.close();
 
           // Save the complete assistant message to the database
@@ -444,7 +450,6 @@ export async function POST(request: NextRequest) {
     return new Response(readableStream, {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
-        "Transfer-Encoding": "chunked",
       },
     });
   } catch (error) {
