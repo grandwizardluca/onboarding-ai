@@ -6,13 +6,22 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export async function GET() {
-  const { data, error } = await supabase
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const orgId = searchParams.get("orgId");
+
+  let query = supabase
     .from("system_prompts")
-    .select("id, content, quiz_system_prompt, updated_at")
+    .select("id, content, updated_at");
+
+  if (orgId) {
+    query = query.eq("org_id", orgId);
+  }
+
+  const { data, error } = await query
     .order("updated_at", { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   if (error) {
     return NextResponse.json(
@@ -21,11 +30,11 @@ export async function GET() {
     );
   }
 
-  return NextResponse.json(data);
+  return NextResponse.json(data ?? { content: "", updated_at: null });
 }
 
 export async function PUT(request: NextRequest) {
-  const { content, quiz_system_prompt } = await request.json();
+  const { content, orgId } = await request.json();
 
   if (!content || !content.trim()) {
     return NextResponse.json(
@@ -34,26 +43,23 @@ export async function PUT(request: NextRequest) {
     );
   }
 
-  // Get the existing prompt ID to update it (not create a new one)
-  const { data: existing } = await supabase
+  // Get the existing prompt for this org
+  let existingQuery = supabase
     .from("system_prompts")
     .select("id")
     .order("updated_at", { ascending: false })
-    .limit(1)
-    .single();
+    .limit(1);
 
-  const updatePayload: Record<string, unknown> = {
-    content,
-    updated_at: new Date().toISOString(),
-  };
-  if (quiz_system_prompt !== undefined) {
-    updatePayload.quiz_system_prompt = quiz_system_prompt;
+  if (orgId) {
+    existingQuery = existingQuery.eq("org_id", orgId);
   }
+
+  const { data: existing } = await existingQuery.maybeSingle();
 
   if (existing) {
     const { error } = await supabase
       .from("system_prompts")
-      .update(updatePayload)
+      .update({ content, updated_at: new Date().toISOString() })
       .eq("id", existing.id);
 
     if (error) {
@@ -63,9 +69,14 @@ export async function PUT(request: NextRequest) {
       );
     }
   } else {
+    const insertPayload: Record<string, unknown> = {
+      content,
+    };
+    if (orgId) insertPayload.org_id = orgId;
+
     const { error } = await supabase
       .from("system_prompts")
-      .insert({ content, quiz_system_prompt });
+      .insert(insertPayload);
 
     if (error) {
       return NextResponse.json(

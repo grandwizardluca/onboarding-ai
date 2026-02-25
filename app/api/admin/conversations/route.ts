@@ -27,10 +27,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(messages);
   }
 
-  // Otherwise, return all conversations with user email and message count
+  // Otherwise, return all conversations with user email, org name, and message count
   const { data: conversations, error } = await supabase
     .from("conversations")
-    .select("id, user_id, title, created_at, updated_at")
+    .select("id, user_id, title, created_at, updated_at, org_id, organizations(name, slug)")
     .order("updated_at", { ascending: false });
 
   if (error) {
@@ -43,19 +43,25 @@ export async function GET(request: NextRequest) {
   // Enrich with user email and message count
   const enriched = await Promise.all(
     (conversations || []).map(async (conv) => {
-      // Get user email
-      const { data: userData } = await supabase.auth.admin.getUserById(
-        conv.user_id
-      );
+      const [{ data: userData }, { count }] = await Promise.all([
+        supabase.auth.admin.getUserById(conv.user_id),
+        supabase
+          .from("messages")
+          .select("id", { count: "exact", head: true })
+          .eq("conversation_id", conv.id),
+      ]);
 
-      // Get message count
-      const { count } = await supabase
-        .from("messages")
-        .select("id", { count: "exact", head: true })
-        .eq("conversation_id", conv.id);
+      const org = conv.organizations as unknown as { name: string; slug: string } | null;
 
       return {
-        ...conv,
+        id: conv.id,
+        user_id: conv.user_id,
+        title: conv.title,
+        created_at: conv.created_at,
+        updated_at: conv.updated_at,
+        org_id: conv.org_id,
+        org_name: org?.name ?? "Unknown",
+        org_slug: org?.slug ?? "",
         user_email: userData?.user?.email || "Unknown",
         message_count: count || 0,
       };

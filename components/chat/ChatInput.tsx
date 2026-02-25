@@ -127,7 +127,7 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask a question about H2 Economics..."
+          placeholder="Ask anything about getting started..."
           disabled={disabled}
           rows={1}
           className="flex-1 resize-none rounded-lg border border-white/[0.12] bg-user-bubble px-4 py-3 text-sm text-foreground outline-none transition-[border-color,box-shadow] duration-300 focus:border-accent focus:shadow-[0_0_0_1px_rgba(255,255,255,0.2)] placeholder:text-foreground/40 disabled:opacity-50"

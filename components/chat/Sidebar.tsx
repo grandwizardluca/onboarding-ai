@@ -22,15 +22,16 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const [loading, setLoading] = useState(true);
   const [logoMode, setLogoMode] = useState<"standard" | "image">("standard");
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [dashboardHref, setDashboardHref] = useState<string | null>(null);
   const router = useRouter();
   const params = useParams();
   const activeId = params?.id as string | undefined;
-  const pathname = usePathname();
   const supabase = createClient();
 
   useEffect(() => {
     loadConversations();
     loadUISettings();
+    loadDashboardLink();
   }, []);
 
   async function loadUISettings() {
@@ -46,41 +47,40 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     }
   }
 
-  async function loadConversations() {
-    const { data } = await supabase
-      .from("conversations")
-      .select("id, title, updated_at")
-      .neq("type", "quiz")
-      .order("updated_at", { ascending: false });
-
-    if (data) setConversations(data);
-    setLoading(false);
-  }
-
-  async function handleNewConversation() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data, error } = await supabase
-      .from("conversations")
-      .insert({ user_id: user.id, title: "New Conversation" })
-      .select("id")
-      .single();
-
-    if (data && !error) {
-      await loadConversations();
-      router.push(`/chat/${data.id}`);
-      onClose();
+  async function loadDashboardLink() {
+    try {
+      const res = await fetch("/api/me");
+      if (!res.ok) return;
+      const { role, orgSlug } = await res.json();
+      if (role === "platform_admin") {
+        setDashboardHref("/admin");
+      } else if (orgSlug) {
+        setDashboardHref(`/client/${orgSlug}`);
+      }
+    } catch {
+      // Non-critical — hide dashboard link if unavailable
     }
   }
 
-  async function handleQuizMode() {
-    const res = await fetch("/api/conversations/quiz", { method: "POST" });
+  async function loadConversations() {
+    try {
+      const res = await fetch("/api/conversations");
+      if (!res.ok) return;
+      const data = await res.json();
+      setConversations(data);
+    } catch {
+      // Non-critical — sidebar will show empty state
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleNewConversation() {
+    const res = await fetch("/api/conversations", { method: "POST" });
     if (!res.ok) return;
-    const { conversationId } = await res.json();
-    router.push(`/chat/${conversationId}`);
+    const data = await res.json();
+    await loadConversations();
+    router.push(`/chat/${data.id}`);
     onClose();
   }
 
@@ -117,12 +117,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={logoUrl}
-                alt="Socratic.sg"
+                alt="Logo"
                 style={{ maxHeight: "80px" }}
                 className="w-auto object-contain"
               />
             ) : (
-              <h2 className="font-serif text-lg font-bold gradient-text">Socratic.sg</h2>
+              <h2 className="font-serif text-lg font-bold gradient-text">Tessra</h2>
             )}
             <ThemeToggle />
           </div>
@@ -135,23 +135,15 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               New Conversation
             </span>
           </button>
-          <Link
-            href="/chat/progress"
-            onClick={onClose}
-            className={`mt-2 block w-full rounded-md px-3 py-2 text-sm transition-all duration-300 ${
-              pathname === "/chat/progress"
-                ? "bg-ui-2 text-foreground"
-                : "text-foreground/50 hover:text-foreground hover-bg-ui-1"
-            }`}
-          >
-            My Progress
-          </Link>
-          <button
-            onClick={handleQuizMode}
-            className="mt-1 w-full rounded-md border border-accent/60 bg-accent/10 px-3 py-2 text-sm font-medium text-accent transition-all duration-300 hover:bg-accent/20 hover:border-accent"
-          >
-            Quiz Mode
-          </button>
+          {dashboardHref && (
+            <Link
+              href={dashboardHref}
+              onClick={onClose}
+              className="mt-2 block w-full rounded-md px-3 py-2 text-sm text-foreground/50 transition-all duration-300 hover:text-foreground hover-bg-ui-1"
+            >
+              Dashboard →
+            </Link>
+          )}
         </div>
 
         {/* Conversation list */}

@@ -1,120 +1,500 @@
-# PRD — Socratic.sg
-**Product Requirements Document**
-Version 1.0 | H2 Economics MVP
+# Product Requirements Document (PRD)
+## AI-Powered SaaS Onboarding Platform
+
+**Version:** 1.0  
+**Last Updated:** February 24, 2026  
+**Author:** Founder  
+**Status:** Pre-MVP Development
 
 ---
 
-## Why This Exists
+## EXECUTIVE SUMMARY
 
-Existing AI tutoring products for Singapore A-Levels (Tutorly, generic ChatGPT wrappers) fail because they:
-- Use outdated or incorrect SEAB syllabus data
-- Apply generic macroeconomics frameworks instead of Singapore-specific ones (e.g. teaching interest rate policy instead of MAS NEER exchange rate policy)
-- Have no memory of the student across sessions
-- Do not teach — they just answer, producing dependent students who can't perform in exams
+We are building a white-label AI onboarding platform that helps B2B SaaS companies automate customer onboarding through intelligent, context-aware guidance. The AI views customer documentation, guides users step-by-step, and escalates to human support when needed.
 
-Socratic.sg exists to fill this gap. It is a 1-on-1 AI tutor that knows the SEAB syllabuses deeply, uses the Socratic method to develop genuine understanding, thinks like a Cambridge A-level marker, and remembers every session the student has had.
+**The Problem:** SaaS companies spend 10-20 CSM hours per customer onboarding, resulting in 40% churn in the first 90 days due to setup complexity.
 
-The primary user is the builder himself — a private A-level candidate retaking the 2026 GCE A-Levels. Secondary users are other private candidates and school students who want better than what Tutorly offers.
+**The Solution:** Multi-tenant AI platform where each SaaS company gets their own configured workspace with AI trained on their specific documentation.
+
+**Business Model:** White-glove setup ($0 for pilots, $299-599/month post-pilot) with 70-80% gross margins.
 
 ---
 
-## What We Are Building (MVP Scope)
+## PRODUCT VISION
 
-We begin the MVP with just one subject - H2 Economics
-A web application with two panels:
+### What We're Building
 
-### 1. Student Panel (/chat)
-A chat interface where a student can have a tutoring conversation about H2 Economics. The AI tutor:
-- Draws on the SEAB 9570 syllabus and Anthony Fok's notes to answer accurately
-- Uses the Socratic method — guides students to answers through questions rather than just delivering content
-- Evaluates student answers like a Cambridge marker (KU / App / Ana / Eval framework)
-- Remembers past conversations and references them when relevant
-- Streams responses in real time (token by token)
+A multi-tenant SaaS platform with three core components:
 
-### 2. Admin Panel (/admin)
-A private panel for the founder to:
-- Edit the AI's system prompt without touching code
-- Upload new documents (syllabus PDFs, notes) which get processed into the knowledge base
-- View all student conversations
+1. **Admin Dashboard** (We use this)
+   - Create client workspaces
+   - Upload and process documentation
+   - Configure onboarding flows
+   - Monitor usage and analytics
+   
+2. **Client Dashboard** (SaaS companies use this)
+   - View their customers' onboarding progress
+   - See analytics and completion rates
+   - Manage escalations
+   - Access API keys and embed codes
 
----
+3. **End-User Experience** (Their customers use this)
+   - Chrome extension for guided setup
+   - Chat widget embedded on client's site
+   - Step-by-step onboarding guidance
+   - Real-time Q&A with AI
 
-## What We Are NOT Building (MVP)
+### Why This Exists
 
-- No payment/subscription system
-- No email notifications
-- No multiple subjects (H2 Economics only)
-- No mobile app
-- No analytics dashboard
-- No social or collaborative features
-- No public signup (students are invited manually for now)
+**Validated by Alex Becker ($40M/year Hyros):**
+- Built this internally for Hyros onboarding
+- Reduced onboarding time by 75%
+- Explicitly said "take this idea and productize it"
 
----
-
-## Core Features in Detail
-
-### Feature 1: RAG Knowledge Base
-Anthony Fok's notes and the SEAB 9570 syllabus are chunked into ~500-word segments. Each chunk is converted into a mathematical embedding (a fingerprint of meaning) and stored in Supabase with pgvector. When a student asks a question, the system finds the 5 most semantically relevant chunks and feeds them to Claude as context before answering.
-
-**Why this matters:** Without this, the AI gives generic economics answers. With this, it answers specifically in the SEAB framework using the exact content the student is being examined on.
-
-### Feature 2: Persistent Conversation Memory
-Every message is saved to Supabase. When a student opens the app, their full conversation history loads. The last 20 messages are passed to Claude with every new question so it has context of the ongoing tutoring relationship.
-
-**Why this matters:** A tutor who forgets every session is useless. Memory allows the AI to say "you got this wrong last week, let's revisit it."
-
-### Feature 3: System Prompt Editor (Admin)
-The system prompt — the instruction sheet that defines how Claude behaves — is stored in the database, not hardcoded. The admin can edit it through the UI and changes take effect immediately for all future conversations.
-
-**Why this matters:** Tuning the AI's behaviour is an ongoing process. The admin needs to adjust tone, add rules, fix bad patterns — without a developer.
-
-### Feature 4: Document Upload + Processing (Admin)
-Admin uploads a PDF or text file. The system extracts the text, chunks it, generates embeddings via OpenAI, and stores everything in Supabase. From that point, all student conversations draw on this material.
-
-**Why this matters:** When the syllabus updates or new notes become available, the knowledge base must be updatable without touching code.
-
-### Feature 5: Authentication
-Two user types: admin and student. Supabase Auth handles login. Admin routes are protected. Students only see the chat panel.
+**Market Validation:**
+- 5,000-10,000 target companies ($1M-50M ARR SaaS)
+- Clear ROI: Save $500k-2M/year in churn + CSM costs
+- No dominant player in this specific niche
 
 ---
 
-## The User Experience (Student Flow)
+## TARGET CUSTOMER
 
-1. Student lands on socratic.sg, logs in
-2. Sees a clean, dark-mode chat interface with their conversation history in a sidebar
-3. Starts a new conversation or continues an existing one
-4. Types a question or pastes in an essay/answer they want feedback on
-5. The AI responds in a Socratic style — probing, questioning, guiding
-6. Responses stream in real time, rendered in markdown
-7. Conversation is saved automatically
+### Primary Customer (Who Pays Us)
+
+**Profile:**
+- B2B SaaS companies
+- $1M-50M ARR (growth stage)
+- 10-200 employees
+- Complex product requiring onboarding
+- Onboarding 20+ new customers/month
+- 2-5 person CS team (capacity constrained)
+
+**Ideal First Vertical:**
+- Marketing analytics tools
+- Attribution platforms
+- Conversion tracking SaaS
+- Similar to Hyros (validated use case)
+
+**Decision Maker:**
+- VP Customer Success
+- Head of Onboarding
+- Founder/CEO (at smaller companies)
+
+**Buying Triggers:**
+- High early churn (>30% in first 90 days)
+- CSM team at capacity
+- Complex setup process (pixels, integrations)
+- Recent funding (budget for tools)
+
+### Secondary Customer (End Users)
+
+**Profile:**
+- Marketing managers/directors
+- Growth teams
+- Technical but not developers
+- Time-constrained, need fast setup
+
+**Their Pain:**
+- Confused by complex setup
+- Stuck waiting for support responses
+- Risk of setup errors
+- Pressure to show ROI quickly
 
 ---
 
-## The User Experience (Admin Flow)
+## CORE FEATURES (MVP)
 
-1. Admin logs in, lands on /admin dashboard
-2. Can navigate to: Edit System Prompt / Manage Documents / View Conversations
-3. System Prompt page: large textarea with current prompt, save button, last-updated timestamp
-4. Documents page: upload area, processing progress bar, list of uploaded docs with chunk counts
-5. Conversations page: table of all student sessions, clickable to read full thread
+### Phase 1: MVP (Weeks 1-4)
+
+**Admin Dashboard (Our Backend)**
+- ✅ Create new client workspaces
+- ✅ Upload PDF/text documentation
+- ✅ Process docs into vector embeddings
+- ✅ View all client analytics
+- ✅ Monitor active onboarding sessions
+
+**Client Configuration**
+- ✅ Define onboarding steps (1-10 steps)
+- ✅ Set difficulty levels per step
+- ✅ Configure escalation triggers
+- ✅ Generate unique embed codes
+
+**Documentation System**
+- ✅ Upload PDFs, URLs, text files
+- ✅ Parse into chunks (~500 words each)
+- ✅ Generate embeddings (OpenAI/Anthropic)
+- ✅ Store in Pinecone with client tags
+- ✅ RAG retrieval (search only client's docs)
+
+**AI Guidance Engine**
+- ✅ Claude Sonnet 4.5 integration
+- ✅ Context-aware responses
+- ✅ Step-by-step guidance
+- ✅ Error detection and troubleshooting
+- ✅ Confidence scoring (escalate if <80%)
+
+**Chat Widget (Embeddable)**
+- ✅ JavaScript embed code
+- ✅ iframe-based (secure, isolated)
+- ✅ Branded for each client
+- ✅ Mobile responsive
+- ✅ Chat history persistence
+
+**Chrome Extension**
+- ✅ Basic shell (install/setup)
+- ✅ API key authentication
+- ✅ Step-by-step checklist UI
+- ✅ Error detection
+- ✅ Link to fix articles
+
+**Analytics**
+- ✅ Sessions started/completed
+- ✅ Average time per step
+- ✅ Drop-off points
+- ✅ Escalation rate
+
+### Phase 2: Post-MVP (Months 2-3)
+
+**NOT building for MVP:**
+- ❌ Screen sharing (use Zoom manually for pilots)
+- ❌ Video processing (accept transcripts only)
+- ❌ Advanced integrations (Stripe, Salesforce)
+- ❌ SSO authentication
+- ❌ White-labeling (basic branding only)
 
 ---
 
-## Success Criteria for MVP
+## USER FLOWS
 
-- Admin can upload the SEAB 9570 syllabus PDF and Anthony Fok's notes, and the system correctly retrieves relevant content when a student asks a question
-- The AI demonstrably gives Singapore-specific economics answers (references MAS NEER, not interest rates, for monetary policy questions)
-- The AI uses the Socratic method — asks questions back rather than immediately delivering answers
-- Conversations persist across sessions
-- Admin can edit the system prompt and see changed behaviour immediately
-- The app is live on a Vercel URL and accessible from a phone
+### Flow 1: We Onboard a New Client (White-Glove Setup)
+
+```
+1. Client signs up (free pilot or paid)
+2. We schedule kickoff call (1 hour)
+3. During call:
+   - We create their workspace in admin panel
+   - We ask for their documentation (PDFs, help center)
+   - We define their onboarding steps together
+4. After call:
+   - We upload their docs (takes 1-2 hours)
+   - We configure their steps
+   - We generate embed code + Chrome extension
+5. Week 2:
+   - We send them embed code
+   - They install on their site
+   - We test with 1-2 test users
+6. Week 3:
+   - Go live with real customers
+   - Weekly check-ins
+```
+
+### Flow 2: Their Customer Gets Onboarded
+
+```
+1. User signs up for ClientSaaS.com
+2. Sees welcome page with chat widget
+3. Widget: "Hi! I'm here to help you set up. Ready to start?"
+4. User: "Yes"
+5. Widget: "Great! First, install our Chrome extension [link]"
+6. User installs extension
+7. Widget guides through Step 1: "Install tracking pixel"
+   - Shows step-by-step instructions
+   - User follows along
+   - Extension detects if completed correctly
+8. User gets stuck: "I'm seeing an error XYZ"
+9. AI searches client's docs, finds solution
+10. If AI can't solve → Escalates to human support
+11. User completes all steps → Success!
+12. Client's CS team sees: "User completed onboarding in 23 mins"
+```
+
+### Flow 3: We Monitor & Improve
+
+```
+1. Daily: Check admin dashboard
+2. See metrics:
+   - 15 sessions started today
+   - 12 completed (80% completion rate)
+   - 3 escalated to human
+   - Average time: 28 minutes
+3. Click into failed session
+4. See where user got stuck: Step 3 (Facebook connection)
+5. Read chat transcript
+6. Realize: AI didn't have answer in docs
+7. Add new article to client's docs about this error
+8. Re-process documentation
+9. Next user with same error → AI solves it
+```
 
 ---
 
-## Technical Constraints
+## TECHNICAL REQUIREMENTS
 
-- Must be buildable in under one week by a non-technical founder using Claude Code
-- Must use Supabase free tier (no cost beyond API usage)
-- Must use Vercel free tier
-- API costs must be negligible at single-user scale
-- No Docker, no complex local setup — must run with `npm run dev`
+### Tech Stack
+
+**Frontend:**
+- Next.js 14+ (App Router)
+- TypeScript
+- Tailwind CSS
+- Shadcn/UI components
+- React Query (data fetching)
+
+**Backend:**
+- Next.js API Routes
+- PostgreSQL (Supabase)
+- Prisma ORM
+- Pinecone (vector database)
+- Claude Sonnet 4.5 API (Anthropic)
+
+**Chrome Extension:**
+- Manifest V3
+- React (for popup/options)
+- Chrome Storage API
+- Message passing
+
+**Infrastructure:**
+- Vercel (hosting)
+- Supabase (database + auth)
+- Pinecone (vector storage)
+- Cloudflare (CDN for widget)
+
+**Third-Party APIs:**
+- Anthropic Claude API
+- OpenAI Embeddings (or Claude embeddings)
+- Daily.co (Phase 2, screen sharing)
+
+### Performance Requirements
+
+**Response Time:**
+- Chat widget loads: <2 seconds
+- AI response time: <3 seconds (p95)
+- Document search: <1 second
+
+**Scalability:**
+- Support 100 concurrent chat sessions
+- 10,000 documents across all clients
+- 100 client workspaces
+
+**Reliability:**
+- 99.5% uptime
+- Graceful degradation (if AI fails, show docs link)
+- Error recovery (retry failed AI requests)
+
+### Security Requirements
+
+**Data Isolation:**
+- Each client's data completely separate
+- Vector search filtered by client_id
+- No cross-client data leakage
+
+**Authentication:**
+- API key authentication for widget
+- Admin panel: Email/password + 2FA
+- Client dashboard: Email/password
+
+**Data Privacy:**
+- GDPR compliant (data deletion on request)
+- SOC 2 Type II (future, post-MVP)
+- Encrypted at rest and in transit
+
+---
+
+## SUCCESS METRICS
+
+### Business Metrics (4-Month Goal)
+
+- **Revenue:** $3,000 MRR (5 paying customers @ $600/mo)
+- **Pilots:** 5 free pilots completed
+- **Conversion:** 60% pilot → paid conversion
+- **Churn:** <10% monthly churn
+
+### Product Metrics (Per Client)
+
+- **Onboarding Completion Rate:** >70% (vs. 60% baseline)
+- **Time to Complete:** <30 minutes (vs. 60 minutes)
+- **Escalation Rate:** <20% (AI handles 80%)
+- **User Satisfaction:** NPS >50
+
+### Technical Metrics
+
+- **AI Accuracy:** >90% correct responses
+- **Response Time:** <3 seconds (p95)
+- **Uptime:** >99.5%
+- **Error Rate:** <1% failed requests
+
+---
+
+## COMPETITIVE LANDSCAPE
+
+### Direct Competitors (Partial Overlap)
+
+**1. Intercom Product Tours**
+- Pre-programmed flows
+- No AI, no adaptability
+- 3-6 month setup
+- $$$$ expensive
+
+**2. Appcues/WalkMe**
+- JavaScript overlays
+- No Q&A capability
+- High setup cost
+
+**3. AI Chatbots (Intercom AI, Zendesk)**
+- Q&A only
+- Don't guide step-by-step
+- Not onboarding-specific
+
+### Our Competitive Advantages
+
+1. **AI-First:** Adaptive, not pre-programmed
+2. **White-Glove Setup:** We do the work (2 weeks vs 3 months)
+3. **Multi-Tenant:** One platform, many clients (cost efficient)
+4. **Vertical Focus:** Start with analytics tools (deep expertise)
+5. **Speed:** Ship in 4 weeks, not 4 months
+
+---
+
+## RISKS & MITIGATION
+
+### Technical Risks
+
+**1. AI Accuracy Too Low**
+- Mitigation: Human escalation, confidence scoring
+- Acceptance: 80% AI success rate is still good
+
+**2. Documentation Quality Poor**
+- Mitigation: We help clients improve docs
+- Acceptance: Part of white-glove service
+
+**3. Integration Complexity**
+- Mitigation: Start simple (embed code only)
+- Future: Build deeper integrations
+
+### Business Risks
+
+**1. Can't Sign Pilots**
+- Mitigation: Becker validation strong
+- Pivot: Try different vertical
+
+**2. Pilots Don't Convert**
+- Mitigation: Provide real value
+- Learn: Why didn't they convert?
+
+**3. Too Manual (Doesn't Scale)**
+- Acceptance: First 100 customers = white-glove
+- Future: Automate setup with templates
+
+---
+
+## GO-TO-MARKET
+
+### Phase 1: Free Pilots (Month 1-2)
+
+**Target:** 5 free pilots
+**Vertical:** Marketing analytics tools
+**Outreach:** LinkedIn DMs to founders
+**Offer:** Free setup + 3 months free usage
+**Ask:** Feedback + case study + reference
+
+### Phase 2: Paid Launch (Month 3-4)
+
+**Target:** 5-10 paying customers
+**Pricing:** $299-599/month
+**Channel:** Pilot referrals + direct outreach
+**Goal:** $3,000 MRR by Month 4
+
+### Phase 3: Scale (Month 5-12)
+
+**Target:** 30-50 customers
+**Pricing:** $299 (starter) to $1,499 (enterprise)
+**Channels:** Content, SEO, partnerships
+**Goal:** $20,000 MRR by Month 12
+
+---
+
+## PRODUCT ROADMAP
+
+### Month 1 (Weeks 1-4): MVP Build
+- ✅ Admin dashboard
+- ✅ Documentation system
+- ✅ Chat widget
+- ✅ Chrome extension
+- ✅ Basic analytics
+
+### Month 2 (Weeks 5-8): Pilot Testing
+- ✅ 5 free pilots onboarded
+- ✅ Weekly feedback calls
+- ✅ Iterate on AI accuracy
+- ✅ Fix critical bugs
+
+### Month 3 (Weeks 9-12): Paid Conversion
+- ✅ Add billing (Stripe)
+- ✅ Convert 3+ pilots to paid
+- ✅ Case studies published
+- ✅ Start outbound sales
+
+### Month 4 (Weeks 13-16): Growth
+- ✅ 5-10 paying customers
+- ✅ $3,000 MRR achieved
+- ✅ Hire first sales help (commission-only)
+- ✅ Plan Phase 2 features
+
+---
+
+## OPEN QUESTIONS
+
+**Technical:**
+- Which embedding model? (OpenAI vs Claude vs open source)
+- How to handle multi-language docs? (Start English only)
+- Screen sharing: Daily.co or build custom? (Use Daily.co)
+
+**Business:**
+- Pricing tiers? (Start single tier, add later)
+- Contract length? (Monthly, annual discount)
+- Free trial? (No, free pilots instead)
+
+**Product:**
+- Voice input/output? (Phase 2)
+- Mobile app? (Phase 2, web-first)
+- Integrations priority? (Stripe, then Salesforce)
+
+---
+
+## APPENDIX
+
+### Key Assumptions
+
+1. Claude Sonnet 4.5 accuracy sufficient for onboarding
+2. SaaS companies willing to share documentation
+3. End users trust AI for setup guidance
+4. 80% AI success rate acceptable
+5. $500/month price point reasonable
+
+### Success Criteria for MVP
+
+- ✅ 5 free pilots signed
+- ✅ 70%+ onboarding completion rate
+- ✅ <3 second AI response time
+- ✅ No critical bugs
+- ✅ Positive pilot feedback (NPS >30)
+
+### Definition of Done (MVP)
+
+- [ ] Admin can create client workspace in <5 minutes
+- [ ] Upload and process 100 docs in <10 minutes
+- [ ] Chat widget embeds in <5 lines of code
+- [ ] AI answers 80%+ of questions correctly
+- [ ] End user completes onboarding in <30 mins
+- [ ] Analytics show all key metrics
+- [ ] No security vulnerabilities
+- [ ] Documentation complete (for clients)
+
+---
+
+**Next Steps:**
+1. Create ARCHITECTURE.md (technical design)
+2. Create BUILD_PLAN.md (week-by-week tasks)
+3. Create CLAUDE.md (AI coding rules)
+4. Subscribe to Claude Pro
+5. Start building Week 1

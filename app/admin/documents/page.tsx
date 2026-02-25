@@ -4,6 +4,12 @@ import { useEffect, useState, useRef } from "react";
 import { useToast } from "@/components/ui/Toast";
 import { PageLoader } from "@/components/PageLoader";
 
+interface Org {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 interface Document {
   id: string;
   title: string;
@@ -13,36 +19,55 @@ interface Document {
 }
 
 export default function DocumentsPage() {
+  const [orgs, setOrgs] = useState<Org[]>([]);
+  const [selectedOrgId, setSelectedOrgId] = useState<string>("");
   const [documents, setDocuments] = useState<Document[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [orgsLoading, setOrgsLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { showToast } = useToast();
 
   useEffect(() => {
-    loadDocuments();
+    loadOrgs();
   }, []);
 
-  async function loadDocuments() {
-    const res = await fetch("/api/documents");
+  useEffect(() => {
+    if (selectedOrgId) loadDocuments(selectedOrgId);
+    else setDocuments([]);
+  }, [selectedOrgId]);
+
+  async function loadOrgs() {
+    setOrgsLoading(true);
+    const res = await fetch("/api/admin/organizations");
     if (res.ok) {
       const data = await res.json();
-      setDocuments(data);
+      setOrgs(data);
+      if (data.length > 0) setSelectedOrgId(data[0].id);
+    }
+    setOrgsLoading(false);
+  }
+
+  async function loadDocuments(orgId: string) {
+    setLoading(true);
+    const res = await fetch(`/api/documents?orgId=${orgId}`);
+    if (res.ok) {
+      setDocuments(await res.json());
     }
     setLoading(false);
   }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !selectedOrgId) return;
 
     const MAX_MB = 50;
     const sizeMB = file.size / 1024 / 1024;
 
     if (sizeMB > MAX_MB) {
       showToast(
-        `File is ${sizeMB.toFixed(1)} MB — max is ${MAX_MB} MB. Try compressing in Preview → File → Export as PDF.`,
+        `File is ${sizeMB.toFixed(1)} MB — max is ${MAX_MB} MB.`,
         "error"
       );
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -51,7 +76,6 @@ export default function DocumentsPage() {
 
     setUploading(true);
 
-    // For large files, rotate status messages so the admin knows processing is ongoing
     const isLarge = sizeMB > 5;
     const messages = isLarge
       ? [
@@ -73,6 +97,7 @@ export default function DocumentsPage() {
 
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("orgId", selectedOrgId);
 
     try {
       const res = await fetch("/api/documents", {
@@ -86,7 +111,7 @@ export default function DocumentsPage() {
           `"${data.title}" uploaded — ${data.chunk_count} chunks created`,
           "success"
         );
-        await loadDocuments();
+        await loadDocuments(selectedOrgId);
       } else {
         const err = await res.json();
         showToast(`Upload failed: ${err.error}`, "error");
@@ -112,69 +137,101 @@ export default function DocumentsPage() {
 
     if (res.ok) {
       showToast(`"${title}" deleted`, "success");
-      await loadDocuments();
+      await loadDocuments(selectedOrgId);
     } else {
       showToast("Failed to delete document", "error");
     }
   }
 
+  const selectedOrg = orgs.find((o) => o.id === selectedOrgId);
+
   return (
     <div className="animate-fade-in-up">
       <h2 className="font-serif text-2xl font-bold mb-6">Documents</h2>
 
-      {/* Upload area */}
-      <div className="rounded-lg border border-dashed border-ui bg-ui-1 p-8 mb-6 text-center transition-all duration-300 hover-border-ui-strong hover-bg-ui-2">
-        <p className="text-foreground/50 text-sm mb-4">
-          Upload a PDF or text file to add to the knowledge base
-          <span className="block text-foreground/30 text-xs mt-0.5">
-            .pdf · .txt · .md · max 50 MB
-          </span>
-        </p>
-        <label
-          className={`group inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-background transition-all duration-300 hover:bg-accent/85 hover:shadow-[0_0_14px_rgba(255,255,255,0.15)] cursor-pointer ${
-            uploading ? "opacity-50 pointer-events-none" : ""
-          }`}
-        >
-          {uploading ? (
-            <>
-              <svg className="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-              Processing...
-            </>
-          ) : (
-            <>
-              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-300 group-hover:-translate-y-0.5">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="17 8 12 3 7 8" />
-                <line x1="12" y1="3" x2="12" y2="15" />
-              </svg>
-              Choose File
-            </>
-          )}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf,.txt,.md"
-            onChange={handleUpload}
-            disabled={uploading}
-            className="hidden"
-          />
+      {/* Org selector */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium mb-1.5">
+          Organization
         </label>
-        {uploadProgress && (
-          <p className="mt-3 text-sm text-foreground/50 animate-pulse">
-            {uploadProgress}
-          </p>
+        {orgsLoading ? (
+          <div className="skeleton h-10 w-64 rounded-lg" />
+        ) : orgs.length === 0 ? (
+          <p className="text-sm text-foreground/40">No organizations yet.</p>
+        ) : (
+          <select
+            value={selectedOrgId}
+            onChange={(e) => setSelectedOrgId(e.target.value)}
+            className="rounded-lg border border-ui bg-ui-1 px-3 py-2 text-sm outline-none focus:border-accent min-w-[240px]"
+          >
+            {orgs.map((org) => (
+              <option key={org.id} value={org.id}>
+                {org.name}
+              </option>
+            ))}
+          </select>
         )}
       </div>
 
+      {/* Upload area */}
+      {selectedOrgId && (
+        <div className="rounded-lg border border-dashed border-ui bg-ui-1 p-8 mb-6 text-center transition-all duration-300 hover-border-ui-strong hover-bg-ui-2">
+          <p className="text-foreground/50 text-sm mb-1">
+            Upload a PDF or text file to{" "}
+            <span className="font-medium text-foreground/70">
+              {selectedOrg?.name}
+            </span>
+            &apos;s knowledge base
+          </p>
+          <p className="text-foreground/30 text-xs mb-4">
+            .pdf · .txt · .md · max 50 MB
+          </p>
+          <label
+            className={`group inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-background transition-all duration-300 hover:bg-accent/85 hover:shadow-[0_0_14px_rgba(255,255,255,0.15)] cursor-pointer ${
+              uploading ? "opacity-50 pointer-events-none" : ""
+            }`}
+          >
+            {uploading ? (
+              <>
+                <svg className="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Processing...
+              </>
+            ) : (
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-300 group-hover:-translate-y-0.5">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                Choose File
+              </>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.txt,.md"
+              onChange={handleUpload}
+              disabled={uploading}
+              className="hidden"
+            />
+          </label>
+          {uploadProgress && (
+            <p className="mt-3 text-sm text-foreground/50 animate-pulse">
+              {uploadProgress}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Document list */}
-      {loading ? (
+      {!selectedOrgId ? null : loading ? (
         <PageLoader label="Loading documents" />
       ) : documents.length === 0 ? (
         <p className="text-foreground/40 text-sm">
-          No documents uploaded yet. Upload your first document above.
+          No documents uploaded yet for this organization.
         </p>
       ) : (
         <div className="rounded-lg border border-ui bg-ui-1 overflow-hidden">

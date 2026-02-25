@@ -381,7 +381,7 @@ export default function ImagesPage() {
               <div>
                 <span className="text-sm font-medium">Standard logo</span>
                 <p className="text-xs text-foreground/40">
-                  Shows the &quot;Socratic.sg&quot; gradient text
+                  Shows the &quot;Tessra&quot; gradient text
                 </p>
               </div>
             </label>

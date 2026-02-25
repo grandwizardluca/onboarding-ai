@@ -55,7 +55,7 @@ interface StudentData {
   conversations: { id: string; title: string; updated_at: string }[];
 }
 
-export default function StudentDetailPage() {
+export default function UserDetailPage() {
   const params = useParams();
   const userId = params.userId as string;
   const [data, setData] = useState<StudentData | null>(null);
@@ -85,7 +85,7 @@ export default function StudentDetailPage() {
   if (loading || !data) {
     return (
       <div className="flex items-center justify-center py-20">
-        <p className="text-foreground/40 text-sm">Loading student data...</p>
+        <p className="text-foreground/40 text-sm">Loading user data...</p>
       </div>
     );
   }
@@ -154,7 +154,7 @@ export default function StudentDetailPage() {
           href="/admin/analytics"
           className="text-foreground/40 hover:text-foreground text-sm transition-colors"
         >
-          &larr; All Students
+          &larr; All Users
         </Link>
         <h2 className="font-serif text-2xl font-bold">{data.user.email}</h2>
       </div>
@@ -192,7 +192,7 @@ export default function StudentDetailPage() {
                 stroke="#d4a017"
                 strokeDasharray="3 3"
                 label={{
-                  value: "Class avg",
+                  value: "Avg",
                   fill: "#d4a017",
                   fontSize: 10,
                 }}
@@ -338,7 +338,7 @@ export default function StudentDetailPage() {
           <div className="rounded-lg border border-foreground/10 p-6">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-serif text-lg font-bold">
-                Syllabus Coverage
+                Topic Coverage
               </h3>
               <span className="text-sm text-foreground/40">
                 vs avg: {data.comparison.avg_topics}

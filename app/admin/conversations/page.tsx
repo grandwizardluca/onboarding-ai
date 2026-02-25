@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { PageLoader } from "@/components/PageLoader";
 
 interface Conversation {
@@ -9,6 +10,8 @@ interface Conversation {
   title: string;
   message_count: number;
   updated_at: string;
+  org_name: string;
+  org_slug: string;
 }
 
 interface Message {
@@ -24,6 +27,7 @@ export default function ConversationsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [orgFilter, setOrgFilter] = useState<string>(""); // "" = all
 
   useEffect(() => {
     loadConversations();
@@ -56,21 +60,57 @@ export default function ConversationsPage() {
     setLoadingMessages(false);
   }
 
+  // Unique orgs for the filter dropdown
+  const uniqueOrgs = Array.from(
+    new Map(conversations.map((c) => [c.org_slug, c.org_name])).entries()
+  ).sort((a, b) => a[1].localeCompare(b[1]));
+
+  const filtered = orgFilter
+    ? conversations.filter((c) => c.org_slug === orgFilter)
+    : conversations;
+
   if (loading) {
     return <PageLoader label="Loading conversations" />;
   }
 
   return (
     <div className="animate-fade-in-up">
-      <h2 className="font-serif text-2xl font-bold mb-6">
-        Student Conversations
-      </h2>
+      <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
+        <h2 className="font-serif text-2xl font-bold">User Conversations</h2>
 
-      {conversations.length === 0 ? (
+        {uniqueOrgs.length > 1 && (
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-foreground/50">Org:</label>
+            <select
+              value={orgFilter}
+              onChange={(e) => {
+                setOrgFilter(e.target.value);
+                setSelectedId(null);
+                setMessages([]);
+              }}
+              className="rounded-lg border border-ui bg-ui-1 px-3 py-1.5 text-sm outline-none focus:border-accent"
+            >
+              <option value="">All organizations</option>
+              {uniqueOrgs.map(([slug, name]) => (
+                <option key={slug} value={slug}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+
+      <p className="text-sm text-foreground/40 mb-4">
+        {filtered.length} {filtered.length === 1 ? "conversation" : "conversations"}
+        {orgFilter && ` in ${uniqueOrgs.find(([s]) => s === orgFilter)?.[1]}`}
+      </p>
+
+      {filtered.length === 0 ? (
         <p className="text-foreground/40 text-sm">No conversations yet.</p>
       ) : (
         <div className="space-y-2">
-          {conversations.map((conv) => (
+          {filtered.map((conv) => (
             <div key={conv.id}>
               {/* Conversation row */}
               <button
@@ -81,16 +121,24 @@ export default function ConversationsPage() {
                     : "border-ui bg-ui-1 hover-border-ui-strong hover-bg-ui-2"
                 }`}
               >
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">
-                      {conv.title}
+                      {conv.title || "Untitled"}
                     </p>
-                    <p className="text-xs text-foreground/40 mt-0.5">
-                      {conv.user_email}
-                    </p>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      <p className="text-xs text-foreground/40">{conv.user_email}</p>
+                      <span className="text-foreground/20 text-xs">·</span>
+                      <Link
+                        href={`/admin/organizations/${conv.org_slug}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-xs text-accent hover:underline"
+                      >
+                        {conv.org_name}
+                      </Link>
+                    </div>
                   </div>
-                  <div className="text-right ml-4 flex-shrink-0">
+                  <div className="text-right flex-shrink-0">
                     <p className="text-xs text-foreground/50">
                       {conv.message_count} messages
                     </p>
@@ -116,7 +164,7 @@ export default function ConversationsPage() {
                     messages.map((msg) => (
                       <div key={msg.id}>
                         <p className="text-xs text-foreground/40 mb-0.5">
-                          {msg.role === "user" ? "Student" : "Socratic"} —{" "}
+                          {msg.role === "user" ? "User" : "Tessra"} —{" "}
                           {new Date(msg.created_at).toLocaleString()}
                         </p>
                         <p

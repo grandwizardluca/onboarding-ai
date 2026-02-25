@@ -1,10 +1,9 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { createServerClient } from "@supabase/ssr";
 import anthropic from "@/lib/anthropic";
 import { retrieveContext } from "@/lib/rag";
 import { generateEmbedding } from "@/lib/openai";
-import { extractSubtopics, TOPIC_KEYS, SUBTOPIC_KEYS } from "@/lib/topics";
+import { getAuthContext } from "@/lib/auth-context";
 
 export const runtime = "nodejs";
 
@@ -57,7 +56,7 @@ async function retrieveAttachedContext(fileText: string, userMessage: string, fi
   scored.sort((a, b) => b.score - a.score);
   const top3 = scored.slice(0, 3).map((s, i) => `[Attached: ${fileName} — excerpt ${i + 1}]\n${s.chunk}`);
 
-  return `The student has attached a file (${fileName}) relevant to their question. Use the excerpts below to inform your answer.\n\n${top3.join("\n\n---\n\n")}`;
+  return `The user has attached a file (${fileName}) relevant to their question. Use the excerpts below to inform your answer.\n\n${top3.join("\n\n---\n\n")}`;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -77,73 +76,16 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const QUIZ_SYSTEM_PROMPT_FALLBACK = `You are a Socratic tutor in quiz mode. The student has completed study sessions on H2 Economics topics. Your role:
-
-1. Generate ONE comprehension question testing deep understanding — scenario-based application questions, NOT definition recall.
-2. After the student answers, evaluate their response 0-100 based on accuracy, depth of reasoning, and application of concepts.
-3. Call the record_quiz_score tool with topic_key, subtopic_key, score, and brief feedback explaining your evaluation.
-4. Provide encouraging feedback and offer another question.
-
-Make questions challenging but fair. Focus on higher-order thinking: application, analysis, and evaluation.
-
-CRITICAL: Do NOT explain the topic before asking your question. Jump straight into the scenario-based question. Your role is to TEST understanding, not teach.`;
-
-const RECORD_QUIZ_SCORE_TOOL = {
-  name: "record_quiz_score",
-  description:
-    "Record a quiz score for a specific H2 Economics subtopic after evaluating the student's answer",
-  input_schema: {
-    type: "object" as const,
-    properties: {
-      topic_key: {
-        type: "string",
-        enum: TOPIC_KEYS,
-        description: "The main H2 Economics topic key (e.g. demand_supply)",
-      },
-      subtopic_key: {
-        type: "string",
-        enum: SUBTOPIC_KEYS,
-        description: "The specific subtopic being tested (e.g. elasticities)",
-      },
-      score: {
-        type: "integer",
-        minimum: 0,
-        maximum: 100,
-        description: "Score out of 100 based on answer quality",
-      },
-      feedback: {
-        type: "string",
-        description: "Brief explanation of the score (2-3 sentences)",
-      },
-    },
-    required: ["topic_key", "subtopic_key", "score", "feedback"],
-  },
-};
-
 export async function POST(request: NextRequest) {
+  // 1. Authenticate and get org context
+  let orgId: string;
   try {
-    // 1. Authenticate the user via their session cookie
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll();
-          },
-          setAll() {},
-        },
-      }
-    );
+    ({ orgId } = await getAuthContext(request));
+  } catch {
+    return new Response("Unauthorized", { status: 401 });
+  }
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return new Response("Unauthorized", { status: 401 });
-    }
-
+  try {
     // 2. Parse request body
     const { conversationId, message: rawMessage, attachedFile } = await request.json() as {
       conversationId: string;
@@ -157,66 +99,19 @@ export async function POST(request: NextRequest) {
 
     const message = sanitizeMessage(rawMessage ?? "");
 
-    // 3. Fetch the conversation to determine its type
-    const { data: convData } = await supabaseAdmin
-      .from("conversations")
-      .select("type")
-      .eq("id", conversationId)
-      .single();
+    console.log("[Chat] orgId:", orgId, "conversationId:", conversationId);
 
-    const conversationType = convData?.type ?? "chat";
-
-    // 4. Save the user's message to the database
-    await supabaseAdmin.from("messages").insert({
+    // 3. Save the user's message to the database
+    // CRITICAL: include org_id — messages table has org_id NOT NULL
+    const { error: userMsgError } = await supabaseAdmin.from("messages").insert({
       conversation_id: conversationId,
+      org_id: orgId,
       role: "user",
       content: message,
     });
+    if (userMsgError) console.error("[Chat] Failed to save user message:", userMsgError);
 
-    // 4b. Record a message_sent activity event
-    await supabaseAdmin.from("activity_events").insert({
-      user_id: user.id,
-      mouse_active: false,
-      keyboard_active: true,
-      tab_focused: true,
-      message_sent: true,
-    });
-
-    // 4c. Extract and upsert subtopic tags (only for normal chat, not quiz)
-    if (conversationType !== "quiz") {
-      const subtopics = extractSubtopics(message);
-      for (const sub of subtopics) {
-        const { data: existing } = await supabaseAdmin
-          .from("conversation_topics")
-          .select("id, mention_count")
-          .eq("conversation_id", conversationId)
-          .eq("topic_key", sub.topicKey)
-          .eq("subtopic_key", sub.subtopicKey)
-          .single();
-
-        if (existing) {
-          await supabaseAdmin
-            .from("conversation_topics")
-            .update({
-              mention_count: existing.mention_count + sub.matchCount,
-              last_mentioned_at: new Date().toISOString(),
-            })
-            .eq("id", existing.id);
-        } else {
-          await supabaseAdmin.from("conversation_topics").insert({
-            conversation_id: conversationId,
-            user_id: user.id,
-            topic_key: sub.topicKey,
-            topic_label: sub.topicLabel,
-            subtopic_key: sub.subtopicKey,
-            category: sub.category,
-            mention_count: sub.matchCount,
-          });
-        }
-      }
-    }
-
-    // 5. Load conversation history (last 20 messages)
+    // 4. Load conversation history (last 20 messages)
     const { data: historyData } = await supabaseAdmin
       .from("messages")
       .select("role, content")
@@ -231,188 +126,29 @@ export async function POST(request: NextRequest) {
         content: sanitizeMessage(msg.content),
       }));
 
-    // ──────────────────────────────────────────────────
-    // QUIZ MODE BRANCH
-    // ──────────────────────────────────────────────────
-    if (conversationType === "quiz") {
-      // Load quiz system prompt from DB, fall back to hardcoded default
-      const { data: promptRow } = await supabaseAdmin
-        .from("system_prompts")
-        .select("quiz_system_prompt")
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .single();
+    console.log("[Chat] history length:", conversationHistory.length);
 
-      const baseQuizPrompt =
-        promptRow?.quiz_system_prompt?.trim() || QUIZ_SYSTEM_PROMPT_FALLBACK;
-
-      // Build context from all non-quiz conversations for this user
-      const { data: otherConvos } = await supabaseAdmin
-        .from("conversations")
-        .select("id, title")
-        .eq("user_id", user.id)
-        .neq("type", "quiz");
-
-      let learningContext = "";
-      if (otherConvos && otherConvos.length > 0) {
-        const contextParts: string[] = [];
-        for (const conv of otherConvos) {
-          const { data: convMessages } = await supabaseAdmin
-            .from("messages")
-            .select("role, content")
-            .eq("conversation_id", conv.id)
-            .order("created_at", { ascending: false })
-            .limit(20);
-
-          if (convMessages && convMessages.length > 0) {
-            // Reverse to chronological order
-            const ordered = [...convMessages].reverse();
-            const excerpt = ordered
-              .map((m) => `${m.role === "user" ? "Student" : "Tutor"}: ${m.content}`)
-              .join("\n");
-            contextParts.push(`[Conversation: ${conv.title}]\n${excerpt}`);
-          }
-        }
-        if (contextParts.length > 0) {
-          learningContext =
-            "\n\n---\n\nStudent's learning history from study sessions:\n\n" +
-            contextParts.join("\n\n");
-        }
-      }
-
-      const quizSystemPrompt = baseQuizPrompt + learningContext;
-
-      // Non-streaming call with tool support
-      const response1 = await anthropic.messages.create({
-        model: "claude-sonnet-4-5-20250929",
-        max_tokens: 2048,
-        system: quizSystemPrompt,
-        messages: conversationHistory,
-        tools: [RECORD_QUIZ_SCORE_TOOL],
-      });
-
-      let finalText = "";
-
-      if (response1.stop_reason === "tool_use") {
-        // Extract text and tool-use blocks
-        const toolUseBlock = response1.content.find(
-          (b): b is { type: "tool_use"; id: string; name: string; input: Record<string, unknown> } =>
-            b.type === "tool_use"
-        );
-        const textBeforeTool = response1.content
-          .filter((b) => b.type === "text")
-          .map((b) => (b as { type: "text"; text: string }).text)
-          .join("");
-
-        // Insert quiz score if tool was called correctly
-        let toolResultContent = "Score recorded successfully.";
-        if (toolUseBlock && toolUseBlock.name === "record_quiz_score") {
-          const input = toolUseBlock.input as {
-            topic_key: string;
-            subtopic_key: string;
-            score: number;
-            feedback: string;
-          };
-          const { error: insertError } = await supabaseAdmin
-            .from("quiz_scores")
-            .insert({
-              user_id: user.id,
-              conversation_id: conversationId,
-              topic_key: input.topic_key,
-              subtopic_key: input.subtopic_key,
-              score: input.score,
-              feedback: input.feedback,
-            });
-
-          if (!insertError) {
-            toolResultContent = `Score recorded: ${input.topic_key}/${input.subtopic_key} = ${input.score}/100`;
-          }
-        }
-
-        // Follow-up call with tool result
-        const followUpMessages = [
-          ...conversationHistory,
-          { role: "assistant" as const, content: response1.content },
-          {
-            role: "user" as const,
-            content: [
-              {
-                type: "tool_result" as const,
-                tool_use_id: toolUseBlock?.id ?? "",
-                content: toolResultContent,
-              },
-            ],
-          },
-        ];
-
-        const response2 = await anthropic.messages.create({
-          model: "claude-sonnet-4-5-20250929",
-          max_tokens: 2048,
-          system: quizSystemPrompt,
-          messages: followUpMessages,
-          tools: [RECORD_QUIZ_SCORE_TOOL],
-        });
-
-        finalText =
-          textBeforeTool +
-          response2.content
-            .filter((b) => b.type === "text")
-            .map((b) => (b as { type: "text"; text: string }).text)
-            .join("");
-      } else {
-        finalText = response1.content
-          .filter((b) => b.type === "text")
-          .map((b) => (b as { type: "text"; text: string }).text)
-          .join("");
-      }
-
-      // Save assistant message and update conversation timestamp
-      await supabaseAdmin.from("messages").insert({
-        conversation_id: conversationId,
-        role: "assistant",
-        content: finalText,
-      });
-
-      await supabaseAdmin
-        .from("conversations")
-        .update({ updated_at: new Date().toISOString() })
-        .eq("id", conversationId);
-
-      // Return final text as a plain stream so the UI handles it identically
-      console.log("[API] Quiz mode: finalText length =", finalText.length);
-      const readableStream = new ReadableStream({
-        start(controller) {
-          console.log("[API] Quiz mode: enqueueing, closing");
-          controller.enqueue(new TextEncoder().encode(finalText));
-          controller.close();
-        },
-      });
-
-      return new Response(readableStream, {
-        headers: {
-          "Content-Type": "text/plain; charset=utf-8",
-        },
-      });
-    }
-
-    // ──────────────────────────────────────────────────
-    // NORMAL CHAT BRANCH (existing logic)
-    // ──────────────────────────────────────────────────
-
-    // Load the active system prompt
-    const { data: promptData } = await supabaseAdmin
+    // 5. Load the active system prompt for this organization
+    // CRITICAL: filter by org_id so each org gets their own configured prompt
+    // maybeSingle() returns null (not an error) when no rows exist
+    const { data: promptData, error: promptError } = await supabaseAdmin
       .from("system_prompts")
       .select("content")
+      .eq("org_id", orgId)
       .order("updated_at", { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
+    if (promptError) console.error("[Chat] system_prompts error:", promptError);
 
-    const systemPrompt = promptData?.content || "You are a helpful AI tutor.";
+    const systemPrompt = promptData?.content || "You are a helpful AI assistant.";
 
-    // Retrieve relevant document chunks via RAG
-    const ragContext = await retrieveContext(message);
+    // 7. Retrieve relevant document chunks via RAG
+    // CRITICAL: orgId ensures only this org's documents are searched
+    console.log("[Chat] Calling retrieveContext with orgId:", orgId, "message:", message.slice(0, 80));
+    const ragContext = await retrieveContext(message, orgId);
+    console.log("[Chat] ragContext length:", ragContext.length, ragContext.length === 0 ? "⚠️ EMPTY" : "✓");
 
-    // If the student attached a file, extract text and find relevant chunks
+    // 8. If the user attached a file, extract text and find relevant chunks
     let attachedContext = "";
     if (attachedFile) {
       let fileText = "";
@@ -429,14 +165,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Build the full system message
+    // 9. Build the full system message
     const contextParts = [ragContext, attachedContext].filter(Boolean);
     const fullSystem = contextParts.length > 0
       ? `${systemPrompt}\n\n---\n\n${contextParts.join("\n\n---\n\n")}`
       : systemPrompt;
 
-    // Stream response from Claude
-    const stream = await anthropic.messages.stream({
+    // 10. Stream response from Claude
+    const stream = anthropic.messages.stream({
       model: "claude-sonnet-4-5-20250929",
       max_tokens: 2048,
       system: fullSystem,
@@ -447,15 +183,14 @@ export async function POST(request: NextRequest) {
     // and collects the full response for saving to DB
     let fullResponse = "";
 
-    console.log("[API] Normal chat: stream starting");
+    console.log("[API] Chat: stream starting");
     const readableStream = new ReadableStream({
       async start(controller) {
-        console.log("[API] Normal chat: ReadableStream start() called");
+        console.log("[API] Chat: ReadableStream start() called");
         try {
           const MAX_RESPONSE_LENGTH = 6000;
           const TRUNCATION_WARNING =
             "\n\n⚠️ My response is too long for one message. I'll need to break this into parts. Ask me to continue, or rephrase your question to be more specific.";
-          let truncated = false;
 
           for await (const event of stream) {
             if (
@@ -466,37 +201,38 @@ export async function POST(request: NextRequest) {
               fullResponse += text;
 
               if (fullResponse.length > MAX_RESPONSE_LENGTH) {
-                // Send the warning and stop streaming
                 controller.enqueue(
                   new TextEncoder().encode(TRUNCATION_WARNING)
                 );
                 fullResponse += TRUNCATION_WARNING;
-                truncated = true;
                 stream.abort();
                 break;
               }
 
-              const chunkNum = fullResponse.length;
-              console.log(`[API] Normal chat: enqueue chunk, text.length=${text.length}, total=${chunkNum}`);
+              console.log(`[API] Chat: enqueue chunk, text.length=${text.length}, total=${fullResponse.length}`);
               controller.enqueue(new TextEncoder().encode(text));
             }
           }
 
-          console.log(`[API] Normal chat: stream done, closing. fullResponse.length=${fullResponse.length}`);
+          console.log(`[API] Chat: stream done. fullResponse.length=${fullResponse.length}`);
           controller.close();
 
           // Save the complete assistant message to the database
-          await supabaseAdmin.from("messages").insert({
+          // CRITICAL: include org_id — messages table has org_id NOT NULL
+          const { error: assistantMsgError } = await supabaseAdmin.from("messages").insert({
             conversation_id: conversationId,
+            org_id: orgId,
             role: "assistant",
             content: fullResponse,
           });
+          if (assistantMsgError) console.error("[Chat] Failed to save assistant message:", assistantMsgError);
 
           // Update conversation timestamp
           await supabaseAdmin
             .from("conversations")
             .update({ updated_at: new Date().toISOString() })
-            .eq("id", conversationId);
+            .eq("id", conversationId)
+            .eq("org_id", orgId);
 
           // Auto-generate title if this is the first exchange
           const { count } = await supabaseAdmin
@@ -512,7 +248,7 @@ export async function POST(request: NextRequest) {
                 messages: [
                   {
                     role: "user",
-                    content: `Generate a concise 3-5 word title for a tutoring conversation that starts with this student question: "${message}". Return ONLY the title, no quotes, no punctuation at the end.`,
+                    content: `Generate a concise 3-5 word title for an onboarding support conversation that starts with this user question: "${message}". Return ONLY the title, no quotes, no punctuation at the end.`,
                   },
                 ],
               });
@@ -525,7 +261,8 @@ export async function POST(request: NextRequest) {
               await supabaseAdmin
                 .from("conversations")
                 .update({ title })
-                .eq("id", conversationId);
+                .eq("id", conversationId)
+                .eq("org_id", orgId);
             } catch {
               // Title generation is not critical — fail silently
             }

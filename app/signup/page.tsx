@@ -39,7 +39,7 @@ export default function SignupPage() {
         {/* Heading outside the card */}
         <div className="text-center mb-8">
           <h1 className="font-serif text-4xl font-bold mb-2 gradient-text">
-            Socratic.sg
+            Tessra
           </h1>
           <p className="text-foreground/50 text-sm">
             Create your account

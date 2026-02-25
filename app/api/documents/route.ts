@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { chunkText } from "@/lib/chunker";
 import { generateEmbedding } from "@/lib/openai";
+import { getAuthContext } from "@/lib/auth-context";
 
 // Ensure this route runs in Node.js runtime (required for pdf-parse)
 export const runtime = "nodejs";
@@ -22,8 +23,26 @@ const supabase = createClient(
  * Accepts multipart form data with a file field
  */
 export async function POST(request: NextRequest) {
+  // 1. Authenticate and get org context
+  let orgId: string;
+  let role: string;
+  try {
+    ({ orgId, role } = await getAuthContext(request));
+  } catch {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const formData = await request.formData();
+
+    // Platform admins can supply an orgId override to upload to any org
+    if (role === "platform_admin") {
+      const overrideOrgId = formData.get("orgId") as string | null;
+      if (overrideOrgId) {
+        orgId = overrideOrgId;
+      }
+    }
+
     const file = formData.get("file") as File | null;
 
     if (!file) {
@@ -70,10 +89,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create document record
+    // Create document record — CRITICAL: store org_id so this document
+    // belongs to the correct organization
     const { data: doc, error: docError } = await supabase
       .from("documents")
-      .insert({ title, source: filename })
+      .insert({ title, source: filename, org_id: orgId })
       .select("id")
       .single();
 
@@ -95,6 +115,7 @@ export async function POST(request: NextRequest) {
         .from("document_chunks")
         .insert({
           document_id: doc.id,
+          org_id: orgId,
           content: chunks[i],
           embedding,
           chunk_index: i,
@@ -127,12 +148,30 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * GET /api/documents — List all documents
+ * GET /api/documents — List documents for the authenticated user's organization.
+ * Platform admins may pass ?orgId= to view a specific org's documents.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // Authenticate and get org context
+  let orgId: string;
+  let role: string;
+  try {
+    ({ orgId, role } = await getAuthContext(request));
+  } catch {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Platform admins can filter by a specific org via query param
+  if (role === "platform_admin") {
+    const override = request.nextUrl.searchParams.get("orgId");
+    if (override) orgId = override;
+  }
+
+  // CRITICAL: filter by org_id — only return this org's documents
   const { data, error } = await supabase
     .from("documents")
     .select("id, title, source, chunk_count, created_at")
+    .eq("org_id", orgId)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -150,6 +189,14 @@ export async function GET() {
  * Expects { id: string } in the request body
  */
 export async function DELETE(request: NextRequest) {
+  // Authenticate and get org context
+  let orgId: string;
+  try {
+    ({ orgId } = await getAuthContext(request));
+  } catch {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const { id } = await request.json();
 
@@ -160,8 +207,13 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    // CRITICAL: filter by both id AND org_id — prevents deleting another org's document
     // Chunks are deleted automatically via ON DELETE CASCADE
-    const { error } = await supabase.from("documents").delete().eq("id", id);
+    const { error } = await supabase
+      .from("documents")
+      .delete()
+      .eq("id", id)
+      .eq("org_id", orgId);
 
     if (error) {
       return NextResponse.json(

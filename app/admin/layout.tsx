@@ -6,10 +6,13 @@ import ThemeToggle from "@/components/ThemeToggle";
 
 const navItems = [
   { href: "/admin", label: "Dashboard" },
+  { href: "/admin/organizations", label: "Organizations" },
   { href: "/admin/prompt", label: "Prompt" },
   { href: "/admin/documents", label: "Documents" },
   { href: "/admin/conversations", label: "Conversations" },
   { href: "/admin/analytics", label: "Analytics" },
+  { href: "/admin/test-chat", label: "Test Chat" },
+  { href: "/admin/insights", label: "Insights" },
   { href: "/admin/images", label: "UI Customization", icon: true },
 ];
 
@@ -30,19 +33,13 @@ export default function AdminLayout({
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between mb-2 sm:mb-0">
             <h1 className="font-serif text-lg font-bold">
-              <span className="gradient-text">Socratic.sg</span>{" "}
+              <span className="gradient-text">Tessra</span>{" "}
               <span className="text-accent/70 text-sm font-sans font-normal">
                 Admin
               </span>
             </h1>
             <div className="flex items-center gap-1">
               <ThemeToggle />
-              <Link
-                href="/chat"
-                className="rounded-md px-3 py-1.5 text-sm text-foreground/40 transition-all duration-300 hover:text-foreground hover-bg-ui-2"
-              >
-                ← Back to Chat
-              </Link>
             </div>
           </div>
           <div className="flex gap-1 overflow-x-auto -mx-1 px-1 sm:mt-2">

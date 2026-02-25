@@ -39,10 +39,10 @@ export default function LoginPage() {
         {/* Heading outside the card */}
         <div className="text-center mb-8">
           <h1 className="font-serif text-4xl font-bold mb-2 gradient-text">
-            Socratic.sg
+            Tessra
           </h1>
           <p className="text-foreground/50 text-sm">
-            AI Tutor for H2 Economics
+            AI-Powered Onboarding
           </p>
         </div>
 

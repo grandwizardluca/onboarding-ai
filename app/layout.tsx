@@ -20,9 +20,9 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Socratic.sg — AI Tutor for H2 Economics",
+  title: "Tessra — AI-Powered Onboarding",
   description:
-    "An AI-powered Socratic tutor for Singapore A-Level H2 Economics (SEAB 9570)",
+    "Automate customer onboarding with an AI assistant trained on your documentation.",
 };
 
 export default function RootLayout({

@@ -4,141 +4,137 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { PageLoader } from "@/components/PageLoader";
 
-interface StudentRow {
+interface UserRow {
   user_id: string;
   email: string;
-  status: "studying_now" | "active_today" | "active_this_week" | "inactive";
+  org_name: string;
+  org_slug: string;
+  session_count: number;
+  active_sessions: number;
+  message_count: number;
   last_active_at: string | null;
-  hours_this_week: number;
-  streak_days: number;
-  total_topics: number;
-  total_messages: number;
-  alert: "declining" | "inactive_3_days" | null;
 }
 
-const statusConfig = {
-  studying_now: { label: "Studying Now", color: "bg-green-500" },
-  active_today: { label: "Active Today", color: "bg-blue-500" },
-  active_this_week: { label: "This Week", color: "bg-amber-500" },
-  inactive: { label: "Inactive", color: "bg-foreground/20" },
-};
+function formatRelative(iso: string | null) {
+  if (!iso) return "Never";
+  const diff = Date.now() - new Date(iso).getTime();
+  const days = Math.floor(diff / 86_400_000);
+  if (days === 0) return "Today";
+  if (days === 1) return "Yesterday";
+  if (days < 7) return `${days}d ago`;
+  if (days < 30) return `${Math.floor(days / 7)}w ago`;
+  return `${Math.floor(days / 30)}mo ago`;
+}
 
-export default function AdminAnalyticsPage() {
-  const [students, setStudents] = useState<StudentRow[]>([]);
+export default function AnalyticsPage() {
+  const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [orgFilter, setOrgFilter] = useState("");
 
   useEffect(() => {
-    loadAnalytics();
+    fetch("/api/admin/analytics")
+      .then((r) => r.json())
+      .then((data) => setUsers(data.users || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
-  async function loadAnalytics() {
-    try {
-      const res = await fetch("/api/admin/analytics");
-      if (res.ok) {
-        const data = await res.json();
-        setStudents(data.students || []);
-      }
-    } catch {}
-    setLoading(false);
-  }
+  const uniqueOrgs = Array.from(
+    new Map(users.map((u) => [u.org_slug, u.org_name])).entries()
+  ).sort((a, b) => a[1].localeCompare(b[1]));
 
-  const alerts = students.filter((s) => s.alert);
+  const filtered = orgFilter
+    ? users.filter((u) => u.org_slug === orgFilter)
+    : users;
 
-  if (loading) {
-    return <PageLoader label="Loading analytics" />;
-  }
+  if (loading) return <PageLoader label="Loading analytics" />;
 
   return (
     <div className="animate-fade-in-up">
-      <h2 className="font-serif text-2xl font-bold mb-6">Student Analytics</h2>
-
-      {/* Alerts */}
-      {alerts.length > 0 && (
-        <div className="mb-6 space-y-2">
-          {alerts.map((student) => (
-            <div
-              key={student.user_id}
-              className="rounded-lg border border-red-500/30 bg-red-500/5 p-3 flex items-center gap-3 transition-all duration-300 hover:border-red-500/50 hover:bg-red-500/[0.08]"
-            >
-              <span className="text-red-400 text-lg">!</span>
-              <div className="text-sm">
-                <span className="font-medium">{student.email}</span>
-                {student.alert === "inactive_3_days" ? (
-                  <span className="text-foreground/50">
-                    {" "}
-                    — has not studied in 3+ days
-                  </span>
-                ) : (
-                  <span className="text-foreground/50">
-                    {" "}
-                    — study time declined significantly this week
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
+      <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
+        <div>
+          <h2 className="font-serif text-2xl font-bold">Analytics</h2>
+          <p className="text-sm text-foreground/40 mt-0.5">
+            {filtered.length} {filtered.length === 1 ? "user" : "users"}
+          </p>
         </div>
-      )}
 
-      {/* Student table */}
-      {students.length === 0 ? (
-        <p className="text-foreground/40 text-sm">No students found.</p>
+        {uniqueOrgs.length > 1 && (
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-foreground/50">Org:</label>
+            <select
+              value={orgFilter}
+              onChange={(e) => setOrgFilter(e.target.value)}
+              className="rounded-lg border border-ui bg-ui-1 px-3 py-1.5 text-sm outline-none focus:border-accent"
+            >
+              <option value="">All organizations</option>
+              {uniqueOrgs.map(([slug, name]) => (
+                <option key={slug} value={slug}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="rounded-lg border border-ui bg-ui-1 p-12 text-center">
+          <p className="text-foreground/40 text-sm">No users found.</p>
+          <p className="text-foreground/30 text-xs mt-1">
+            Add members to an organization to see them here.
+          </p>
+        </div>
       ) : (
-        <div className="rounded-lg border border-ui bg-ui-1 overflow-hidden">
+        <div className="rounded-lg border border-ui overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-ui text-left text-xs text-foreground/50">
-                <th className="px-4 py-3">Student</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3 hidden sm:table-cell">
-                  Hours/Week
-                </th>
-                <th className="px-4 py-3 hidden sm:table-cell">Streak</th>
-                <th className="px-4 py-3 hidden md:table-cell">Topics</th>
-                <th className="px-4 py-3 hidden md:table-cell">Questions</th>
+              <tr className="border-b border-ui bg-ui-1 text-left text-xs font-medium text-foreground/50 uppercase tracking-wider">
+                <th className="px-5 py-3">User</th>
+                <th className="px-5 py-3 hidden sm:table-cell">Organization</th>
+                <th className="px-5 py-3">Sessions</th>
+                <th className="px-5 py-3 hidden md:table-cell">Messages</th>
+                <th className="px-5 py-3 hidden lg:table-cell">Last Active</th>
               </tr>
             </thead>
-            <tbody>
-              {students.map((student) => {
-                const statusInfo = statusConfig[student.status];
-                return (
-                  <tr
-                    key={student.user_id}
-                    className="border-b border-ui last:border-0 transition-all duration-200 ui-row-hover"
-                  >
-                    <td className="px-4 py-3">
-                      <Link
-                        href={`/admin/analytics/${student.user_id}`}
-                        className="text-sm transition-all duration-200 hover:text-foreground hover:underline underline-offset-2"
-                      >
-                        {student.email}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="flex items-center gap-2 text-sm">
-                        <span
-                          className={`inline-block w-2 h-2 rounded-full ${statusInfo.color}`}
-                        />
-                        <span className="text-foreground/60">
-                          {statusInfo.label}
-                        </span>
+            <tbody className="divide-y divide-ui">
+              {filtered.map((user) => (
+                <tr
+                  key={user.user_id}
+                  className="bg-background hover:bg-ui-1 transition-colors duration-150"
+                >
+                  <td className="px-5 py-3">
+                    <Link
+                      href={`/admin/analytics/${user.user_id}`}
+                      className="text-sm hover:text-accent hover:underline transition-colors"
+                    >
+                      {user.email}
+                    </Link>
+                    {user.active_sessions > 0 && (
+                      <span className="ml-2 inline-flex items-center rounded-full bg-green-50 border border-green-200 px-1.5 py-0.5 text-xs text-green-700">
+                        active
                       </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-foreground/60 hidden sm:table-cell">
-                      {student.hours_this_week}h
-                    </td>
-                    <td className="px-4 py-3 text-sm text-foreground/60 hidden sm:table-cell">
-                      {student.streak_days}d
-                    </td>
-                    <td className="px-4 py-3 text-sm text-foreground/60 hidden md:table-cell">
-                      {student.total_topics}/12
-                    </td>
-                    <td className="px-4 py-3 text-sm text-foreground/60 hidden md:table-cell">
-                      {student.total_messages}
-                    </td>
-                  </tr>
-                );
-              })}
+                    )}
+                  </td>
+                  <td className="px-5 py-3 hidden sm:table-cell">
+                    <Link
+                      href={`/admin/organizations/${user.org_slug}`}
+                      className="text-sm text-accent hover:underline"
+                    >
+                      {user.org_name}
+                    </Link>
+                  </td>
+                  <td className="px-5 py-3 text-sm text-foreground/70">
+                    {user.session_count}
+                  </td>
+                  <td className="px-5 py-3 hidden md:table-cell text-sm text-foreground/70">
+                    {user.message_count}
+                  </td>
+                  <td className="px-5 py-3 hidden lg:table-cell text-xs text-foreground/40">
+                    {formatRelative(user.last_active_at)}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

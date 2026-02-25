@@ -38,10 +38,10 @@ export async function middleware(request: NextRequest) {
 
   // Public routes — no auth required
   if (pathname === "/login" || pathname === "/signup") {
-    // If already logged in, redirect to /chat
+    // If already logged in, let app/page.tsx handle role-based redirect
     if (user) {
       const url = request.nextUrl.clone();
-      url.pathname = "/chat";
+      url.pathname = "/";
       return NextResponse.redirect(url);
     }
     return supabaseResponse;
@@ -54,15 +54,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Admin routes require admin role
+  // Admin routes require platform_admin role
   if (pathname.startsWith("/admin")) {
-    const { data: profile } = await supabase
-      .from("profiles")
+    const { data: membership } = await supabase
+      .from("memberships")
       .select("role")
-      .eq("id", user.id)
+      .eq("user_id", user.id)
       .single();
 
-    if (!profile || profile.role !== "admin") {
+    if (!membership || membership.role !== "platform_admin") {
       const url = request.nextUrl.clone();
       url.pathname = "/chat";
       return NextResponse.redirect(url);

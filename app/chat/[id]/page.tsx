@@ -6,14 +6,6 @@ import { createClient } from "@/lib/supabase/client";
 import MessageList, { Message } from "@/components/chat/MessageList";
 import ChatInput, { AttachedFile } from "@/components/chat/ChatInput";
 
-const QUIZ_WELCOME: Message = {
-  id: "quiz-welcome",
-  role: "assistant",
-  content:
-    "Welcome to Quiz Mode! I'll test your understanding of H2 Economics topics from your study sessions. Ready for your first question?",
-  created_at: new Date(0).toISOString(),
-};
-
 export default function ConversationPage() {
   const params = useParams();
   const conversationId = params.id as string;
@@ -22,7 +14,6 @@ export default function ConversationPage() {
   const [sending, setSending] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
   const [chatDisabled, setChatDisabled] = useState(false);
-  const [isQuizMode, setIsQuizMode] = useState(false);
   const [conversationTitle, setConversationTitle] = useState("Conversation");
   const supabase = createClient();
 
@@ -50,7 +41,7 @@ export default function ConversationPage() {
     const [{ data: convData }, { data: msgData }] = await Promise.all([
       supabase
         .from("conversations")
-        .select("type, title")
+        .select("title")
         .eq("id", conversationId)
         .single(),
       supabase
@@ -60,19 +51,8 @@ export default function ConversationPage() {
         .order("created_at", { ascending: true }),
     ]);
 
-    const isQuiz = convData?.type === "quiz";
-    setIsQuizMode(isQuiz);
     if (convData?.title) setConversationTitle(convData.title);
-
-    const realMessages = (msgData as Message[]) ?? [];
-
-    // For a brand-new quiz conversation with no messages, show a welcome prompt
-    if (isQuiz && realMessages.length === 0) {
-      setMessages([QUIZ_WELCOME]);
-    } else {
-      setMessages(realMessages);
-    }
-
+    setMessages((msgData as Message[]) ?? []);
     setLoading(false);
   }
 
@@ -80,7 +60,7 @@ export default function ConversationPage() {
     setSending(true);
     setStreamingContent("");
 
-    // Optimistically add user message, removing the UI-only welcome placeholder if present
+    // Optimistically add user message
     const tempUserMsg: Message = {
       id: crypto.randomUUID(),
       role: "user",
@@ -88,10 +68,7 @@ export default function ConversationPage() {
       created_at: new Date().toISOString(),
       attachedFileName: attachedFile?.name,
     };
-    setMessages((prev) => {
-      const filtered = prev.filter((m) => m.id !== "quiz-welcome");
-      return [...filtered, tempUserMsg];
-    });
+    setMessages((prev) => [...prev, tempUserMsg]);
 
     try {
       const response = await fetch("/api/chat", {
@@ -163,15 +140,14 @@ export default function ConversationPage() {
   }
 
   function handleExport() {
-    const exportable = messages.filter((m) => m.id !== "quiz-welcome");
-    if (exportable.length === 0) return;
+    if (messages.length === 0) return;
 
-    const lines = exportable.map((m) => {
-      const speaker = m.role === "user" ? "You" : "Socratic";
+    const lines = messages.map((m) => {
+      const speaker = m.role === "user" ? "You" : "Assistant";
       return `${speaker}:\n${m.content.trim()}`;
     });
 
-    const header = `${conversationTitle}\nExported from Socratic.sg — ${new Date().toLocaleDateString("en-SG", { day: "numeric", month: "long", year: "numeric" })}\n`;
+    const header = `${conversationTitle}\nExported ${new Date().toLocaleDateString("en-US", { day: "numeric", month: "long", year: "numeric" })}\n`;
     const body = lines.join("\n\n");
     const fullText = `${header}\n${body}\n`;
 
@@ -201,21 +177,9 @@ export default function ConversationPage() {
 
   return (
     <div className="flex flex-1 flex-col min-h-0">
-      {/* Top bar: quiz badge (left) + export button (right) */}
-      <div className="flex items-center justify-between border-b border-foreground/10 px-4 py-2 shrink-0">
-        <div className="flex items-center gap-2">
-          {isQuizMode && (
-            <>
-              <span className="rounded-full bg-accent/20 border border-accent/60 px-3 py-0.5 text-xs font-semibold text-accent tracking-wide">
-                Quiz Mode
-              </span>
-              <span className="text-xs text-foreground/40">
-                Answers are scored and tracked in My Progress
-              </span>
-            </>
-          )}
-        </div>
-        {messages.filter((m) => m.id !== "quiz-welcome").length > 0 && (
+      {/* Top bar: export button */}
+      <div className="flex items-center justify-end border-b border-foreground/10 px-4 py-2 shrink-0">
+        {messages.length > 0 && (
           <button
             onClick={handleExport}
             className="flex items-center gap-1.5 rounded px-3 py-1 text-xs text-foreground/50 hover:text-foreground/80 hover:bg-foreground/5 transition-colors"
@@ -233,8 +197,7 @@ export default function ConversationPage() {
       <MessageList
         messages={messages}
         streamingContent={streamingContent}
-        isLoading={!isQuizMode && sending && !streamingContent}
-        quizLoading={isQuizMode && sending && !streamingContent}
+        isLoading={sending && !streamingContent}
       />
       {chatDisabled ? (
         <div className="border-t border-foreground/10 px-4 py-4 text-center">
