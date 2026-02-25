@@ -38,7 +38,7 @@ export default function TestChatPage() {
     fetch("/api/admin/organizations")
       .then((r) => r.json())
       .then((data) => {
-        const list: Org[] = data.organizations ?? [];
+        const list: Org[] = Array.isArray(data) ? data : (data.organizations ?? []);
         setOrgs(list);
         if (list.length > 0) setSelectedOrgId(list[0].id);
       })

@@ -30,10 +30,11 @@ export default function PromptPage() {
     const res = await fetch("/api/admin/organizations");
     if (res.ok) {
       const data = await res.json();
-      setOrgs(data.organizations ?? []);
+      const list: Org[] = Array.isArray(data) ? data : (data.organizations ?? []);
+      setOrgs(list);
       // Default to first org if any
-      if (data.organizations?.length > 0) {
-        setSelectedOrgId(data.organizations[0].id);
+      if (list.length > 0) {
+        setSelectedOrgId(list[0].id);
       } else {
         setLoading(false);
       }
