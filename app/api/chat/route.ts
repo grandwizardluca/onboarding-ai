@@ -119,14 +119,30 @@ export async function POST(request: NextRequest) {
       .order("created_at", { ascending: true })
       .limit(20);
 
-    const conversationHistory = (historyData || [])
+    let conversationHistory = (historyData || [])
       .filter((msg) => msg.content && msg.content.trim().length > 0)
       .map((msg) => ({
         role: msg.role as "user" | "assistant",
         content: sanitizeMessage(msg.content),
       }));
 
-    console.log("[Chat] history length:", conversationHistory.length);
+    // Trim long conversations: keep first 2 messages (establish context) +
+    // last 8 (recent exchange). Prevents context overflow in long widget sessions.
+    if (conversationHistory.length > 10) {
+      conversationHistory = [
+        ...conversationHistory.slice(0, 2),
+        ...conversationHistory.slice(-8),
+      ];
+    }
+
+    // Continuation detection: if the user just typed "continue", expand it
+    // so the model knows exactly what to do rather than guessing.
+    const lastMsg = conversationHistory[conversationHistory.length - 1];
+    if (lastMsg?.role === "user" && lastMsg.content.trim().toLowerCase() === "continue") {
+      lastMsg.content = "Please continue your previous explanation.";
+    }
+
+    console.log("[Chat] history length (after trimming):", conversationHistory.length);
 
     // 5. Load the active system prompt for this organization
     // CRITICAL: filter by org_id so each org gets their own configured prompt
