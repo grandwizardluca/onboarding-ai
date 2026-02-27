@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import MessageList, { Message } from "@/components/chat/MessageList";
+import MessageList, { Message, RAGSource } from "@/components/chat/MessageList";
 import ChatInput from "@/components/chat/ChatInput";
 import { createClient } from "@/lib/supabase/client";
 
@@ -121,6 +121,20 @@ export default function TestChatPage() {
 
       if (!res.ok) throw new Error("Request failed");
 
+      // Decode citations from the response header — available before the body stream starts.
+      // Try-catch prevents a malformed header from crashing the UI.
+      let sources: RAGSource[] = [];
+      try {
+        const raw = res.headers.get("X-RAG-Sources");
+        if (raw) {
+          // Unicode-safe decode: base64 → bytes → UTF-8 string → JSON
+          const bytes = Uint8Array.from(atob(raw), (c) => c.charCodeAt(0));
+          sources = JSON.parse(new TextDecoder().decode(bytes));
+        }
+      } catch (e) {
+        console.warn("[Citations] Failed to decode X-RAG-Sources header:", e);
+      }
+
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
       let full = "";
@@ -142,6 +156,7 @@ export default function TestChatPage() {
           role: "assistant",
           content: full,
           created_at: new Date().toISOString(),
+          sources,
         },
       ]);
 

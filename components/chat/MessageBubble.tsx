@@ -1,14 +1,16 @@
 "use client";
 
 import ReactMarkdown from "react-markdown";
+import type { RAGSource } from "@/lib/rag";
 
 interface MessageBubbleProps {
   role: "user" | "assistant";
   content: string;
   attachedFileName?: string;
+  sources?: RAGSource[];
 }
 
-export default function MessageBubble({ role, content, attachedFileName }: MessageBubbleProps) {
+export default function MessageBubble({ role, content, attachedFileName, sources }: MessageBubbleProps) {
   if (role === "user") {
     return (
       <div className="flex justify-end animate-fade-in-up">
@@ -69,6 +71,19 @@ export default function MessageBubble({ role, content, attachedFileName }: Messa
         >
           {content}
         </ReactMarkdown>
+        {sources && sources.length > 0 && (
+          <div className="mt-3 pt-2 border-t border-foreground/10 flex flex-wrap items-center gap-1.5">
+            <span className="text-xs text-foreground/40">Sources:</span>
+            {sources.map((s, i) => (
+              <span
+                key={i}
+                className="text-xs text-foreground/50 bg-ui-1 border border-ui rounded px-2 py-0.5"
+              >
+                {s.document_title} · chunk {s.chunk_index + 1} · {Math.round(s.similarity * 100)}%
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

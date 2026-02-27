@@ -93,11 +93,15 @@ export async function POST(request: NextRequest) {
     const systemPrompt = promptData?.content || "You are a helpful AI assistant.";
 
     // RAG retrieval scoped to this org
-    const ragContext = await retrieveContext(message, orgId);
+    const ragResult = await retrieveContext(message, orgId);
 
-    const fullSystem = ragContext
-      ? `${systemPrompt}\n\n---\n\n${ragContext}`
+    const fullSystem = ragResult.context
+      ? `${systemPrompt}\n\n---\n\n${ragResult.context}`
       : systemPrompt;
+
+    // Encode sources as base64 JSON for the response header.
+    // Buffer.from handles UTF-8 correctly (Unicode-safe).
+    const sourcesEncoded = Buffer.from(JSON.stringify(ragResult.sources)).toString("base64");
 
     // Stream response
     const stream = anthropic.messages.stream({
@@ -144,7 +148,10 @@ export async function POST(request: NextRequest) {
     });
 
     return new Response(readableStream, {
-      headers: { "Content-Type": "text/plain; charset=utf-8" },
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "X-RAG-Sources": sourcesEncoded,
+      },
     });
   } catch (error) {
     console.error("Test chat error:", error);

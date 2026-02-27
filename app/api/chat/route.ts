@@ -145,8 +145,8 @@ export async function POST(request: NextRequest) {
     // 7. Retrieve relevant document chunks via RAG
     // CRITICAL: orgId ensures only this org's documents are searched
     console.log("[Chat] Calling retrieveContext with orgId:", orgId, "message:", message.slice(0, 80));
-    const ragContext = await retrieveContext(message, orgId);
-    console.log("[Chat] ragContext length:", ragContext.length, ragContext.length === 0 ? "⚠️ EMPTY" : "✓");
+    const ragResult = await retrieveContext(message, orgId);
+    console.log("[Chat] ragContext length:", ragResult.context.length, ragResult.context.length === 0 ? "⚠️ EMPTY" : "✓", "sources:", ragResult.sources.length);
 
     // 8. If the user attached a file, extract text and find relevant chunks
     let attachedContext = "";
@@ -165,8 +165,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Encode sources as base64 JSON for the response header (Unicode-safe via Buffer)
+    const sourcesEncoded = Buffer.from(JSON.stringify(ragResult.sources)).toString("base64");
+
     // 9. Build the full system message
-    const contextParts = [ragContext, attachedContext].filter(Boolean);
+    const contextParts = [ragResult.context, attachedContext].filter(Boolean);
     const fullSystem = contextParts.length > 0
       ? `${systemPrompt}\n\n---\n\n${contextParts.join("\n\n---\n\n")}`
       : systemPrompt;
@@ -277,6 +280,7 @@ export async function POST(request: NextRequest) {
     return new Response(readableStream, {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
+        "X-RAG-Sources": sourcesEncoded,
       },
     });
   } catch (error) {

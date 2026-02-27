@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import MessageBubble from "./MessageBubble";
+import type { RAGSource } from "@/lib/rag";
+
+export type { RAGSource };
 
 export interface Message {
   id: string;
@@ -9,6 +12,7 @@ export interface Message {
   content: string;
   created_at: string;
   attachedFileName?: string; // UI-only — not persisted to DB
+  sources?: RAGSource[];     // UI-only — from X-RAG-Sources header, not in DB
 }
 
 interface MessageListProps {
@@ -105,7 +109,7 @@ export default function MessageList({
   return (
     <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
       {messages.map((msg) => (
-        <MessageBubble key={msg.id} role={msg.role} content={msg.content} attachedFileName={msg.attachedFileName} />
+        <MessageBubble key={msg.id} role={msg.role} content={msg.content} attachedFileName={msg.attachedFileName} sources={msg.sources} />
       ))}
       {streamingContent && (
         <MessageBubble role="assistant" content={streamingContent} />
