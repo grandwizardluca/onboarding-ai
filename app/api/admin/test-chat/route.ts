@@ -126,9 +126,9 @@ export async function POST(request: NextRequest) {
               controller.enqueue(new TextEncoder().encode(text));
             }
           }
-          controller.close();
-
-          // Save assistant response
+          // Save assistant response BEFORE closing the stream.
+          // In serverless (Vercel), the process may be killed once the client
+          // receives the final byte — awaiting here ensures the write completes.
           await supabase.from("messages").insert({
             conversation_id: conversationId,
             org_id: orgId,
@@ -141,6 +141,8 @@ export async function POST(request: NextRequest) {
             .update({ updated_at: new Date().toISOString() })
             .eq("id", conversationId)
             .eq("org_id", orgId);
+
+          controller.close();
         } catch (error) {
           controller.error(error);
         }

@@ -218,9 +218,10 @@ export async function POST(request: NextRequest) {
           }
 
           console.log(`[API] Chat: stream done. fullResponse.length=${fullResponse.length}`);
-          controller.close();
 
-          // Save the complete assistant message to the database
+          // Save the complete assistant message BEFORE closing the stream.
+          // In serverless (Vercel), the process may be killed once the client
+          // receives the final byte — awaiting here ensures the write completes.
           // CRITICAL: include org_id — messages table has org_id NOT NULL
           const { error: assistantMsgError } = await supabaseAdmin.from("messages").insert({
             conversation_id: conversationId,
@@ -270,6 +271,8 @@ export async function POST(request: NextRequest) {
               // Title generation is not critical — fail silently
             }
           }
+
+          controller.close();
         } catch (error) {
           console.error("Stream error:", error);
           controller.error(error);
