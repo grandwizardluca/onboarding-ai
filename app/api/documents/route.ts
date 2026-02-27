@@ -82,6 +82,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Strip null bytes and other control characters that crash PostgreSQL (error 22P05).
+    // Common in Notion-exported PDFs and some authoring tools.
+    text = text.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g, "");
+
     if (!text.trim()) {
       return NextResponse.json(
         { error: "Could not extract text from file" },
