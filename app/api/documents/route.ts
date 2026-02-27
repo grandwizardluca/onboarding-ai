@@ -111,36 +111,44 @@ export async function POST(request: NextRequest) {
     // Chunk the text
     const chunks = chunkText(text);
 
-    // Embed and store each chunk
+    // Embed and store each chunk — per-chunk try-catch so one bad chunk
+    // doesn't abort the whole document. Track successes for chunk_count.
+    let successCount = 0;
     for (let i = 0; i < chunks.length; i++) {
-      const embedding = await generateEmbedding(chunks[i]);
+      try {
+        const embedding = await generateEmbedding(chunks[i]);
 
-      const { error: chunkError } = await supabase
-        .from("document_chunks")
-        .insert({
-          document_id: doc.id,
-          org_id: orgId,
-          content: chunks[i],
-          embedding,
-          chunk_index: i,
-        });
+        const { error: chunkError } = await supabase
+          .from("document_chunks")
+          .insert({
+            document_id: doc.id,
+            org_id: orgId,
+            content: chunks[i],
+            embedding,
+            chunk_index: i,
+          });
 
-      if (chunkError) {
-        console.error(`Error inserting chunk ${i}:`, chunkError);
+        if (chunkError) {
+          console.error(`[Documents] Failed to insert chunk ${i}:`, chunkError);
+        } else {
+          successCount++;
+        }
+      } catch (chunkErr) {
+        console.error(`[Documents] Failed to embed chunk ${i}, skipping:`, chunkErr);
       }
     }
 
-    // Update document with chunk count
+    // Update document with actual number of successfully stored chunks
     await supabase
       .from("documents")
-      .update({ chunk_count: chunks.length })
+      .update({ chunk_count: successCount })
       .eq("id", doc.id);
 
     return NextResponse.json({
       id: doc.id,
       title,
       source: filename,
-      chunk_count: chunks.length,
+      chunk_count: successCount,
     });
   } catch (error) {
     console.error("Document processing error:", error);

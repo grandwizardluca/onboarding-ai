@@ -55,5 +55,24 @@ export function chunkText(text: string): string[] {
     chunks.push(currentParagraphs.join("\n\n"));
   }
 
-  return chunks;
+  return chunks.filter((chunk) => !isLowQualityChunk(chunk));
+}
+
+/**
+ * Returns true for chunks that aren't worth embedding:
+ * - Too short to contain useful information
+ * - Mostly bullet points (likely a table of contents or nav section)
+ */
+function isLowQualityChunk(chunk: string): boolean {
+  if (chunk.length < 100) return true;
+
+  const lines = chunk.split("\n").filter((l) => l.trim().length > 0);
+  if (lines.length === 0) return true;
+
+  // Count lines that look like bullet points or numbered list items
+  const bulletLines = lines.filter((l) =>
+    /^[\s]*[-•*►]\s/.test(l) || /^[\s]*\d+[.)]\s/.test(l)
+  );
+
+  return bulletLines.length / lines.length > 0.7;
 }
