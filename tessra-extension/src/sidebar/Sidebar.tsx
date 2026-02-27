@@ -1,49 +1,60 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { getAuth } from "../utils/storage";
+import ChatInterface from "./ChatInterface";
 
-// Phase 1 placeholder — full sidebar UI built in Phase 3
 export default function Sidebar() {
+  const [orgName, setOrgName] = useState<string | null>(null);
+
+  useEffect(() => {
+    getAuth().then((auth) => {
+      if (auth) setOrgName(auth.orgName);
+    });
+  }, []);
+
+  function handleCollapse() {
+    chrome.runtime.sendMessage({ type: "TOGGLE_SIDEBAR" });
+  }
+
   return (
     <div
-      style={{
-        height: "100vh",
-        background: "#0f0f1a",
-        color: "#e2e8f0",
-        fontFamily: "system-ui, -apple-system, sans-serif",
-        display: "flex",
-        flexDirection: "column",
-        borderLeft: "1px solid #1e1e3a",
-      }}
+      className="flex flex-col bg-sidebar-bg text-gray-200"
+      style={{ height: "100vh", fontFamily: "system-ui, -apple-system, sans-serif" }}
     >
       {/* Header */}
-      <div
-        style={{
-          padding: "14px 16px",
-          borderBottom: "1px solid #1e1e3a",
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-        }}
-      >
-        <span style={{ fontSize: 16 }}>✦</span>
-        <span style={{ fontWeight: 600, fontSize: 14 }}>Tessra Setup Assistant</span>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-sidebar-border flex-shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-accent text-base flex-shrink-0">✦</span>
+          <div className="min-w-0">
+            <span className="font-semibold text-sm text-gray-100 block">Tessra Assistant</span>
+            {orgName && (
+              <span className="text-xs text-gray-500 truncate block">{orgName}</span>
+            )}
+          </div>
+        </div>
+        <button
+          onClick={handleCollapse}
+          title="Collapse sidebar"
+          className="flex-shrink-0 rounded p-1.5 text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-colors ml-2"
+        >
+          {/* Chevron right — collapse icon */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
       </div>
 
-      {/* Body */}
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: 16,
-        }}
-      >
-        <p style={{ fontSize: 13, color: "#64748b", textAlign: "center" }}>
-          Sidebar loaded successfully.
-          <br />
-          Chat interface coming in Phase 3.
-        </p>
-      </div>
+      {/* Chat */}
+      <ChatInterface />
     </div>
   );
 }
