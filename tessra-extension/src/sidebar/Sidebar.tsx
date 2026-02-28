@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { getAuth, getDeviceId, type WorkflowConfig } from "../utils/storage";
 import { getProgress, updateProgress } from "../utils/api";
 import ChatInterface from "./ChatInterface";
@@ -11,6 +11,32 @@ export default function Sidebar() {
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [deviceId, setDeviceId] = useState<string | null>(null);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [progressLoading, setProgressLoading] = useState(true);
+
+  // Refs so the postMessage listener always sees latest state without re-registering
+  const apiKeyRef = useRef<string | null>(null);
+  const deviceIdRef = useRef<string | null>(null);
+  const workflowConfigRef = useRef<WorkflowConfig | null>(null);
+  const currentStepRef = useRef(0);
+  const completedStepsRef = useRef<number[]>([]);
+
+  useEffect(() => { apiKeyRef.current = apiKey; }, [apiKey]);
+  useEffect(() => { deviceIdRef.current = deviceId; }, [deviceId]);
+  useEffect(() => { workflowConfigRef.current = workflowConfig; }, [workflowConfig]);
+  useEffect(() => { currentStepRef.current = currentStep; }, [currentStep]);
+  useEffect(() => { completedStepsRef.current = completedSteps; }, [completedSteps]);
+
+  useEffect(() => {
+    const onOnline = () => setIsOnline(true);
+    const onOffline = () => setIsOnline(false);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, []);
 
   useEffect(() => {
     async function init() {
@@ -30,34 +56,62 @@ export default function Sidebar() {
         setCurrentStep(progress.currentStep);
         setCompletedSteps(progress.completedSteps);
       }
+      setProgressLoading(false);
     }
     init();
   }, []);
 
-  function handleCollapse() {
-    chrome.runtime.sendMessage({ type: "TOGGLE_SIDEBAR" });
-  }
+  // Listen for STEP_COMPLETE posted by the in-page overlay via content.ts postMessage
+  useEffect(() => {
+    function handleMessage(event: MessageEvent) {
+      if (event.data?.type === "STEP_COMPLETE") {
+        markCompleteFromRefs();
+      }
+    }
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []); // register once — reads latest state via refs
 
-  async function handleMarkComplete() {
-    if (!apiKey || !deviceId || !workflowConfig) return;
-    const newCompleted = completedSteps.includes(currentStep)
-      ? completedSteps
-      : [...completedSteps, currentStep];
-    const nextStep = Math.min(currentStep + 1, workflowConfig.steps.length - 1);
-    const newCurrent = newCompleted.length >= workflowConfig.steps.length
-      ? currentStep  // stay at end when all done
-      : nextStep;
+  function markCompleteFromRefs() {
+    const ak = apiKeyRef.current;
+    const did = deviceIdRef.current;
+    const config = workflowConfigRef.current;
+    const step = currentStepRef.current;
+    const done = completedStepsRef.current;
+    if (!ak || !did || !config) return;
+
+    const newCompleted = done.includes(step) ? done : [...done, step];
+    const nextStep = Math.min(step + 1, config.steps.length - 1);
+    const newCurrent = newCompleted.length >= config.steps.length ? step : nextStep;
 
     setCompletedSteps(newCompleted);
     setCurrentStep(newCurrent);
 
-    await updateProgress(apiKey, deviceId, {
-      currentStep: newCurrent,
-      completedSteps: newCompleted,
-    });
-
-    // Notify content script to refresh the overlay
+    updateProgress(ak, did, { currentStep: newCurrent, completedSteps: newCompleted });
     chrome.runtime.sendMessage({ type: "STEP_UPDATE", currentStep: newCurrent });
+  }
+
+  async function handleMarkComplete() {
+    const config = workflowConfig;
+    const ak = apiKey;
+    const did = deviceId;
+    if (!ak || !did || !config) return;
+
+    const newCompleted = completedSteps.includes(currentStep)
+      ? completedSteps
+      : [...completedSteps, currentStep];
+    const nextStep = Math.min(currentStep + 1, config.steps.length - 1);
+    const newCurrent = newCompleted.length >= config.steps.length ? currentStep : nextStep;
+
+    setCompletedSteps(newCompleted);
+    setCurrentStep(newCurrent);
+
+    await updateProgress(ak, did, { currentStep: newCurrent, completedSteps: newCompleted });
+    chrome.runtime.sendMessage({ type: "STEP_UPDATE", currentStep: newCurrent });
+  }
+
+  function handleCollapse() {
+    chrome.runtime.sendMessage({ type: "TOGGLE_SIDEBAR" });
   }
 
   return (
@@ -70,7 +124,14 @@ export default function Sidebar() {
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-accent text-base flex-shrink-0">✦</span>
           <div className="min-w-0">
-            <span className="font-semibold text-sm text-gray-100 block">Tessra Assistant</span>
+            <div className="flex items-center gap-1.5">
+              <span className="font-semibold text-sm text-gray-100">Tessra Assistant</span>
+              {!isOnline && (
+                <span className="text-[10px] font-medium bg-yellow-900/50 text-yellow-400 border border-yellow-700/50 rounded px-1.5 py-0.5">
+                  offline
+                </span>
+              )}
+            </div>
             {orgName && (
               <span className="text-xs text-gray-500 truncate block">{orgName}</span>
             )}
@@ -97,8 +158,14 @@ export default function Sidebar() {
         </button>
       </div>
 
-      {/* Progress panel — only shown when workflow is configured */}
-      {workflowConfig && (
+      {/* Progress panel — shown when workflow is configured, skeleton while loading */}
+      {workflowConfig && progressLoading && (
+        <div className="border-b border-sidebar-border px-4 py-3 space-y-2 bg-sidebar-header">
+          <div className="h-2 rounded-full bg-gray-800 animate-pulse w-full" />
+          <div className="h-3 rounded bg-gray-800 animate-pulse w-2/3" />
+        </div>
+      )}
+      {workflowConfig && !progressLoading && (
         <ProgressPanel
           config={workflowConfig}
           currentStep={currentStep}
