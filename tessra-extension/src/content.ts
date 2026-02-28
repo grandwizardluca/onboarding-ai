@@ -5,6 +5,39 @@ const COLLAPSED_WIDTH = 48;
 let sidebarContainer: HTMLDivElement | null = null;
 let collapsed = false;
 
+// ── Page context ───────────────────────────────────────────────────────────────
+
+function getPageContext() {
+  return {
+    type: "PAGE_CONTEXT",
+    url: window.location.href,
+    domain: window.location.hostname,
+    title: document.title,
+  };
+}
+
+function postPageContext() {
+  const iframe = sidebarContainer?.querySelector("iframe") as HTMLIFrameElement | null;
+  if (!iframe?.contentWindow) return;
+  iframe.contentWindow.postMessage(getPageContext(), "*");
+}
+
+// Intercept SPA navigation (pushState / replaceState) so we detect URL changes
+// in React/Next.js apps that don't trigger a full page load.
+const origPush = history.pushState.bind(history);
+history.pushState = (...args) => {
+  origPush(...args);
+  postPageContext();
+};
+const origReplace = history.replaceState.bind(history);
+history.replaceState = (...args) => {
+  origReplace(...args);
+  postPageContext();
+};
+window.addEventListener("popstate", postPageContext);
+
+// ── Sidebar injection ──────────────────────────────────────────────────────────
+
 function injectSidebar() {
   if (sidebarContainer) return; // already injected
 
@@ -35,6 +68,11 @@ function injectSidebar() {
     display: block !important;
   `;
   iframe.allow = "clipboard-write";
+
+  // Once the sidebar loads, send it the current page context immediately
+  iframe.addEventListener("load", () => {
+    postPageContext();
+  });
 
   container.appendChild(iframe);
   document.documentElement.appendChild(container);

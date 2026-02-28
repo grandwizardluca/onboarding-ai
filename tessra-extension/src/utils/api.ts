@@ -13,7 +13,8 @@ export async function validateKey(
 export async function widgetChat(
   apiKey: string,
   message: string,
-  messages: { role: "user" | "assistant"; content: string }[]
+  messages: { role: "user" | "assistant"; content: string }[],
+  pageContext?: { url: string; domain: string; title: string }
 ): Promise<Response> {
   return fetch(`${BACKEND_URL}/api/widget/chat`, {
     method: "POST",
@@ -21,6 +22,6 @@ export async function widgetChat(
       "Content-Type": "application/json",
       "X-API-Key": apiKey,
     },
-    body: JSON.stringify({ message, messages }),
+    body: JSON.stringify({ message, messages, pageContext }),
   });
 }

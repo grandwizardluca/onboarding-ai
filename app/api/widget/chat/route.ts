@@ -29,10 +29,11 @@ export async function POST(request: Request) {
   const orgId = org.id;
 
   try {
-    // 2. Parse body — extension sends history + current message separately
-    const { message, messages: history } = (await request.json()) as {
+    // 2. Parse body — extension sends history + current message + optional page context
+    const { message, messages: history, pageContext } = (await request.json()) as {
       message: string;
       messages: { role: "user" | "assistant"; content: string }[];
+      pageContext?: { url: string; domain: string; title: string };
     };
 
     if (!message?.trim()) {
@@ -59,8 +60,16 @@ export async function POST(request: Request) {
     // 5. Retrieve relevant document chunks (CRITICAL: filtered by orgId)
     const ragResult = await retrieveContext(message.trim(), orgId);
 
-    const fullSystem = ragResult.context
-      ? `${systemPrompt}\n\n---\n\n${ragResult.context}`
+    // Build system prompt — append RAG context and current page location if available
+    const contextParts: string[] = [];
+    if (ragResult.context) contextParts.push(ragResult.context);
+    if (pageContext) {
+      contextParts.push(
+        `Current page: "${pageContext.title}" — ${pageContext.url}\nDomain: ${pageContext.domain}`
+      );
+    }
+    const fullSystem = contextParts.length > 0
+      ? `${systemPrompt}\n\n---\n\n${contextParts.join("\n\n---\n\n")}`
       : systemPrompt;
 
     // Encode sources for response header (Unicode-safe via Buffer)

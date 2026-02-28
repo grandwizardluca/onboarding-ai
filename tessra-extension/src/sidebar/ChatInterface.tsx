@@ -9,16 +9,38 @@ function nextId() {
   return `msg-${++msgCounter}`;
 }
 
+interface PageContext {
+  url: string;
+  domain: string;
+  title: string;
+}
+
 export default function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [streamingContent, setStreamingContent] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [apiKey, setApiKey] = useState<string | null>(null);
+  const [pageContext, setPageContext] = useState<PageContext | null>(null);
 
   useEffect(() => {
     getAuth().then((auth) => {
       if (auth) setApiKey(auth.apiKey);
     });
+  }, []);
+
+  // Receive page context from the content script via postMessage
+  useEffect(() => {
+    function handleMessage(event: MessageEvent) {
+      if (event.data?.type === "PAGE_CONTEXT") {
+        setPageContext({
+          url: event.data.url,
+          domain: event.data.domain,
+          title: event.data.title,
+        });
+      }
+    }
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
   }, []);
 
   async function sendMessage(text: string) {
@@ -34,7 +56,7 @@ export default function ChatInterface() {
     const history = messages.map((m) => ({ role: m.role, content: m.content }));
 
     try {
-      const res = await widgetChat(apiKey, text, history);
+      const res = await widgetChat(apiKey, text, history, pageContext ?? undefined);
 
       if (!res.ok) {
         setMessages((prev) => [
