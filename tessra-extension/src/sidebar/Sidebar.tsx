@@ -122,6 +122,27 @@ export default function Sidebar() {
     safeSendMessage({ type: "STEP_UPDATE", currentStep: newCurrent });
   }
 
+  async function handleUndo() {
+    const config = workflowConfig;
+    const ak = apiKey;
+    const did = deviceId;
+    if (!ak || !did || !config || completedSteps.length === 0) return;
+
+    // Determine the step to undo: if all done, undo the last step; otherwise undo currentStep - 1
+    const allDone = completedSteps.length >= config.steps.length;
+    const stepToUndo = allDone ? currentStep : currentStep - 1;
+    if (stepToUndo < 0) return;
+
+    const newCompleted = completedSteps.filter((s) => s !== stepToUndo);
+    const newCurrent = stepToUndo;
+
+    setCompletedSteps(newCompleted);
+    setCurrentStep(newCurrent);
+
+    await updateProgress(ak, did, { currentStep: newCurrent, completedSteps: newCompleted });
+    safeSendMessage({ type: "STEP_UPDATE", currentStep: newCurrent });
+  }
+
   function handleCollapse() {
     safeSendMessage({ type: "TOGGLE_SIDEBAR" });
   }
@@ -183,6 +204,7 @@ export default function Sidebar() {
           currentStep={currentStep}
           completedSteps={completedSteps}
           onMarkComplete={handleMarkComplete}
+          onUndo={handleUndo}
         />
       )}
 

@@ -43,8 +43,11 @@ export async function GET(request: NextRequest) {
   // Enrich with user email and message count
   const enriched = await Promise.all(
     (conversations || []).map(async (conv) => {
-      const [{ data: userData }, { count }] = await Promise.all([
-        supabase.auth.admin.getUserById(conv.user_id),
+      const [userResult, { count }] = await Promise.all([
+        // Widget sessions have null user_id — guard before calling getUserById
+        conv.user_id
+          ? supabase.auth.admin.getUserById(conv.user_id)
+          : Promise.resolve({ data: null }),
         supabase
           .from("messages")
           .select("id", { count: "exact", head: true })
@@ -62,7 +65,7 @@ export async function GET(request: NextRequest) {
         org_id: conv.org_id,
         org_name: org?.name ?? "Unknown",
         org_slug: org?.slug ?? "",
-        user_email: userData?.user?.email || "Unknown",
+        user_email: (userResult as { data: { user?: { email?: string } } | null }).data?.user?.email || "Widget session",
         message_count: count || 0,
       };
     })

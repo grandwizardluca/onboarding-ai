@@ -6,6 +6,7 @@ interface ProgressPanelProps {
   currentStep: number;
   completedSteps: number[];
   onMarkComplete: () => void;
+  onUndo: () => void;
 }
 
 export default function ProgressPanel({
@@ -13,6 +14,7 @@ export default function ProgressPanel({
   currentStep,
   completedSteps,
   onMarkComplete,
+  onUndo,
 }: ProgressPanelProps) {
   const steps = config.steps;
   if (!steps || steps.length === 0) return null;
@@ -22,6 +24,7 @@ export default function ProgressPanel({
   const percent = Math.round((doneCount / total) * 100);
   const currentStepData = steps[currentStep] ?? null;
   const allDone = doneCount >= total;
+  const canUndo = completedSteps.length > 0;
 
   return (
     <div className="border-b border-sidebar-border px-4 py-3 space-y-2.5 bg-sidebar-header">
@@ -39,18 +42,31 @@ export default function ProgressPanel({
         <span className="text-xs text-gray-500 shrink-0">{percent}%</span>
       </div>
 
-      {/* Current step title */}
-      {!allDone && currentStepData && (
+      {/* Current step title + actions */}
+      {currentStepData && (
         <div className="flex items-start justify-between gap-2">
           <p className="text-xs font-medium text-gray-200 leading-snug">
-            {currentStepData.title || `Step ${currentStep + 1}`}
+            {allDone ? "All steps complete" : (currentStepData.title || `Step ${currentStep + 1}`)}
           </p>
-          <button
-            onClick={onMarkComplete}
-            className="shrink-0 text-xs text-accent hover:text-indigo-300 font-medium transition-colors whitespace-nowrap"
-          >
-            Mark done ✓
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {canUndo && (
+              <button
+                onClick={onUndo}
+                title="Undo last step"
+                className="text-xs text-gray-500 hover:text-gray-300 font-medium transition-colors whitespace-nowrap"
+              >
+                ← Undo
+              </button>
+            )}
+            {!allDone && (
+              <button
+                onClick={onMarkComplete}
+                className="text-xs text-accent hover:text-indigo-300 font-medium transition-colors whitespace-nowrap"
+              >
+                Mark done ✓
+              </button>
+            )}
+          </div>
         </div>
       )}
 

@@ -61,7 +61,7 @@ export async function POST(request: Request) {
       if (existing) convId = existing.id;
     }
     if (!convId) {
-      const { data: newConv } = await supabase
+      const { data: newConv, error: convErr } = await supabase
         .from("conversations")
         .insert({
           org_id: orgId,
@@ -71,6 +71,7 @@ export async function POST(request: Request) {
         })
         .select("id")
         .single();
+      if (convErr) console.error("[Widget Chat] Failed to create conversation:", convErr.message);
       convId = newConv?.id ?? null;
     }
 
