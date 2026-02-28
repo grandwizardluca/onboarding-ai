@@ -52,6 +52,11 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse;
   }
 
+  // Widget API routes are authenticated via X-API-Key header, not session cookies
+  if (pathname.startsWith("/api/widget/")) {
+    return supabaseResponse;
+  }
+
   // All other routes require authentication
   if (!user) {
     const url = request.nextUrl.clone();
