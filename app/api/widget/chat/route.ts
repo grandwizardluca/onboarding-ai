@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { after } from "next/server";
 import anthropic from "@/lib/anthropic";
 import { retrieveContext } from "@/lib/rag";
 
@@ -155,9 +156,11 @@ export async function POST(request: Request) {
       messages: conversationMessages,
     });
 
+    // Accumulate full response so after() can persist it once the stream is done
+    let fullResponse = "";
+
     const readableStream = new ReadableStream({
       async start(controller) {
-        let fullResponse = "";
         try {
           for await (const event of stream) {
             if (
@@ -168,19 +171,6 @@ export async function POST(request: Request) {
               controller.enqueue(new TextEncoder().encode(event.delta.text));
             }
           }
-
-          // Persist user + assistant messages after stream completes
-          if (convId && fullResponse) {
-            await supabase.from("messages").insert([
-              { conversation_id: convId, role: "user", content: message.trim() },
-              { conversation_id: convId, role: "assistant", content: fullResponse },
-            ]);
-            await supabase
-              .from("conversations")
-              .update({ updated_at: new Date().toISOString() })
-              .eq("id", convId);
-          }
-
           controller.close();
         } catch (error) {
           console.error("[Widget Chat] Stream error:", error);
@@ -188,6 +178,27 @@ export async function POST(request: Request) {
         }
       },
     });
+
+    // after() runs after the response stream closes — keeps the function alive
+    // long enough to persist messages even on Vercel serverless
+    if (convId) {
+      after(async () => {
+        if (!fullResponse) return;
+        const { error: msgErr } = await supabase.from("messages").insert([
+          { conversation_id: convId, role: "user", content: message.trim() },
+          { conversation_id: convId, role: "assistant", content: fullResponse },
+        ]);
+        if (msgErr) {
+          console.error("[Widget Chat] Failed to save messages:", msgErr.message);
+        } else {
+          console.log("[Widget Chat] Messages saved for conversation:", convId);
+        }
+        await supabase
+          .from("conversations")
+          .update({ updated_at: new Date().toISOString() })
+          .eq("id", convId);
+      });
+    }
 
     return new Response(readableStream, {
       headers: {
