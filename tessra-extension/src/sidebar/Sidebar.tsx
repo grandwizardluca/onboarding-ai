@@ -4,6 +4,18 @@ import { getProgress, updateProgress } from "../utils/api";
 import ChatInterface from "./ChatInterface";
 import ProgressPanel from "./components/ProgressPanel";
 
+// Guard against extension context invalidation (happens when extension is reloaded
+// while old sidebar iframes are still alive in existing tabs).
+function safeSendMessage(msg: object) {
+  try {
+    if (chrome?.runtime?.id) {
+      chrome.runtime.sendMessage(msg, () => void chrome.runtime.lastError);
+    }
+  } catch {
+    // Extension context invalidated — silently ignore
+  }
+}
+
 export default function Sidebar() {
   const [orgName, setOrgName] = useState<string | null>(null);
   const [workflowConfig, setWorkflowConfig] = useState<WorkflowConfig | null>(null);
@@ -88,7 +100,7 @@ export default function Sidebar() {
     setCurrentStep(newCurrent);
 
     updateProgress(ak, did, { currentStep: newCurrent, completedSteps: newCompleted });
-    chrome.runtime.sendMessage({ type: "STEP_UPDATE", currentStep: newCurrent });
+    safeSendMessage({ type: "STEP_UPDATE", currentStep: newCurrent });
   }
 
   async function handleMarkComplete() {
@@ -107,11 +119,11 @@ export default function Sidebar() {
     setCurrentStep(newCurrent);
 
     await updateProgress(ak, did, { currentStep: newCurrent, completedSteps: newCompleted });
-    chrome.runtime.sendMessage({ type: "STEP_UPDATE", currentStep: newCurrent });
+    safeSendMessage({ type: "STEP_UPDATE", currentStep: newCurrent });
   }
 
   function handleCollapse() {
-    chrome.runtime.sendMessage({ type: "TOGGLE_SIDEBAR" });
+    safeSendMessage({ type: "TOGGLE_SIDEBAR" });
   }
 
   return (

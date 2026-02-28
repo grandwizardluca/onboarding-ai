@@ -143,7 +143,9 @@ function checkOverlay() {
 // ── Sidebar injection ──────────────────────────────────────────────────────────
 
 function injectSidebar() {
-  if (sidebarContainer) return; // already injected
+  if (sidebarContainer) return; // already injected (same script instance)
+  // Guard against re-injection when extension reloads into a tab that already has the sidebar
+  if (document.getElementById("tessra-sidebar-root")) return;
 
   const container = document.createElement("div");
   container.id = "tessra-sidebar-root";
@@ -200,23 +202,26 @@ function toggleSidebar() {
 }
 
 // On load: check auth and inject sidebar; load workflow config for overlay
-chrome.storage.local.get(["apiKey", "workflowConfig"], ({ apiKey, workflowConfig }) => {
-  if (apiKey) {
-    if (workflowConfig) currentWorkflowConfig = workflowConfig as WorkflowConfig;
-    injectSidebar();
-  }
-});
+try {
+  chrome.storage.local.get(["apiKey", "workflowConfig"], ({ apiKey, workflowConfig }) => {
+    if (apiKey) {
+      if (workflowConfig) currentWorkflowConfig = workflowConfig as WorkflowConfig;
+      injectSidebar();
+    }
+  });
 
-// Listen for messages from background service worker
-chrome.runtime.onMessage.addListener((message) => {
-  if (message.type === "AUTH_SUCCESS") injectSidebar();
-  if (message.type === "AUTH_CLEARED") removeSidebar();
-  if (message.type === "TOGGLE_SIDEBAR") toggleSidebar();
+  // Listen for messages from background service worker
+  chrome.runtime.onMessage.addListener((message) => {
+    if (message.type === "AUTH_SUCCESS") injectSidebar();
+    if (message.type === "AUTH_CLEARED") removeSidebar();
+    if (message.type === "TOGGLE_SIDEBAR") toggleSidebar();
 
-  if (message.type === "STEP_UPDATE") {
-    // Sidebar advanced step → refresh overlay for new step
-    currentStepIndex = message.currentStep ?? 0;
-    checkOverlay();
-  }
-
-});
+    if (message.type === "STEP_UPDATE") {
+      // Sidebar advanced step → refresh overlay for new step
+      currentStepIndex = message.currentStep ?? 0;
+      checkOverlay();
+    }
+  });
+} catch {
+  // Extension context invalidated (e.g. reloaded while tab was open) — do nothing
+}
