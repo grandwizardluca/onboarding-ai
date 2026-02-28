@@ -175,7 +175,7 @@ export default function Sidebar() {
       )}
 
       {/* Chat */}
-      <ChatInterface currentStep={currentStep} workflowConfig={workflowConfig} />
+      <ChatInterface currentStep={currentStep} completedSteps={completedSteps} workflowConfig={workflowConfig} />
     </div>
   );
 }

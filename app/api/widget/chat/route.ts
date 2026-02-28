@@ -29,11 +29,17 @@ export async function POST(request: Request) {
   const orgId = org.id;
 
   try {
-    // 2. Parse body — extension sends history + current message + optional page context
-    const { message, messages: history, pageContext } = (await request.json()) as {
+    // 2. Parse body — extension sends history + current message + optional context
+    const { message, messages: history, pageContext, workflowContext } = (await request.json()) as {
       message: string;
       messages: { role: "user" | "assistant"; content: string }[];
       pageContext?: { url: string; domain: string; title: string };
+      workflowContext?: {
+        totalSteps: number;
+        currentStep: number;
+        completedSteps: number[];
+        steps: { id: number; title: string; instructions: string; sites: string; completed: boolean }[];
+      };
     };
 
     if (!message?.trim()) {
@@ -60,14 +66,44 @@ export async function POST(request: Request) {
     // 5. Retrieve relevant document chunks (CRITICAL: filtered by orgId)
     const ragResult = await retrieveContext(message.trim(), orgId);
 
-    // Build system prompt — append RAG context and current page location if available
+    // Build system prompt — append RAG context, workflow context, and page location
     const contextParts: string[] = [];
     if (ragResult.context) contextParts.push(ragResult.context);
-    if (pageContext) {
+
+    if (workflowContext?.steps?.length) {
+      const completedCount = workflowContext.completedSteps.length;
+      const percent = Math.round((completedCount / workflowContext.totalSteps) * 100);
+      const currentPageUrl = pageContext?.url ?? "";
+
+      const stepLines = workflowContext.steps.map((step) => {
+        const marker = step.completed ? "✓" : step.id === workflowContext.currentStep ? "→" : "○";
+        const status = step.completed ? "(COMPLETED)" : step.id === workflowContext.currentStep ? "(CURRENT)" : "(PENDING)";
+        const details = step.id === workflowContext.currentStep
+          ? `\n   Instructions: ${step.instructions}\n   Expected sites: ${step.sites}`
+          : "";
+        return `${marker} Step ${step.id}: ${step.title} ${status}${details}`;
+      }).join("\n");
+
+      const currentStepSites = workflowContext.steps[workflowContext.currentStep]?.sites ?? "";
+      const onCorrectSite = currentStepSites
+        .split(",")
+        .map((s) => s.trim().toLowerCase())
+        .some((s) => currentPageUrl.toLowerCase().includes(s));
+      const siteNote = currentPageUrl
+        ? onCorrectSite
+          ? "✓ User is on the correct site for this step"
+          : "⚠️ User may not be on the expected site for this step"
+        : "";
+
+      contextParts.push(
+        `═══ WORKFLOW CONTEXT ═══\nYou are guiding this user through a ${workflowContext.totalSteps}-step onboarding process.\nProgress: ${completedCount} of ${workflowContext.totalSteps} steps complete (${percent}%)\n\n${stepLines}${siteNote ? `\n\nCurrent page: ${currentPageUrl}\n${siteNote}` : ""}`
+      );
+    } else if (pageContext) {
       contextParts.push(
         `Current page: "${pageContext.title}" — ${pageContext.url}\nDomain: ${pageContext.domain}`
       );
     }
+
     const fullSystem = contextParts.length > 0
       ? `${systemPrompt}\n\n---\n\n${contextParts.join("\n\n---\n\n")}`
       : systemPrompt;

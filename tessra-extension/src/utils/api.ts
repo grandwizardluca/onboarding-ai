@@ -36,11 +36,27 @@ export async function updateProgress(
   });
 }
 
+export interface WorkflowContextStep {
+  id: number;
+  title: string;
+  instructions: string;
+  sites: string;
+  completed: boolean;
+}
+
+export interface WorkflowContext {
+  totalSteps: number;
+  currentStep: number;
+  completedSteps: number[];
+  steps: WorkflowContextStep[];
+}
+
 export async function widgetChat(
   apiKey: string,
   message: string,
   messages: { role: "user" | "assistant"; content: string }[],
-  pageContext?: { url: string; domain: string; title: string }
+  pageContext?: { url: string; domain: string; title: string },
+  workflowContext?: WorkflowContext
 ): Promise<Response> {
   return fetch(`${BACKEND_URL}/api/widget/chat`, {
     method: "POST",
@@ -48,6 +64,6 @@ export async function widgetChat(
       "Content-Type": "application/json",
       "X-API-Key": apiKey,
     },
-    body: JSON.stringify({ message, messages, pageContext }),
+    body: JSON.stringify({ message, messages, pageContext, workflowContext }),
   });
 }

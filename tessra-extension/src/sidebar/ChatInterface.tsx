@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { getAuth, type WorkflowConfig } from "../utils/storage";
-import { widgetChat } from "../utils/api";
+import { widgetChat, type WorkflowContext } from "../utils/api";
 import MessageList, { type Message, type RAGSource } from "./components/MessageList";
 import ChatInput from "./components/ChatInput";
 
@@ -17,10 +17,11 @@ interface PageContext {
 
 interface Props {
   currentStep?: number;
+  completedSteps?: number[];
   workflowConfig?: WorkflowConfig | null;
 }
 
-export default function ChatInterface({ currentStep, workflowConfig }: Props) {
+export default function ChatInterface({ currentStep, completedSteps, workflowConfig }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [streamingContent, setStreamingContent] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -61,18 +62,23 @@ export default function ChatInterface({ currentStep, workflowConfig }: Props) {
     const history = messages.map((m) => ({ role: m.role, content: m.content }));
 
     try {
-      // Include current workflow step in page context so AI can give step-specific guidance
-      const stepData = workflowConfig?.steps[currentStep ?? 0];
-      const enrichedContext = pageContext
+      // Build full workflow context so AI understands all steps, not just the current one
+      const wfContext: WorkflowContext | undefined = workflowConfig?.steps?.length
         ? {
-            ...pageContext,
-            currentStep: stepData
-              ? `Step ${(currentStep ?? 0) + 1}: ${stepData.title}`
-              : undefined,
+            totalSteps: workflowConfig.steps.length,
+            currentStep: currentStep ?? 0,
+            completedSteps: completedSteps ?? [],
+            steps: workflowConfig.steps.map((s) => ({
+              id: s.id,
+              title: s.title,
+              instructions: s.instructions,
+              sites: s.sites,
+              completed: (completedSteps ?? []).includes(s.id),
+            })),
           }
         : undefined;
 
-      const res = await widgetChat(apiKey, text, history, enrichedContext);
+      const res = await widgetChat(apiKey, text, history, pageContext ?? undefined, wfContext);
 
       if (!res.ok) {
         setMessages((prev) => [
