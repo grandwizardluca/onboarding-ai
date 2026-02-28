@@ -185,8 +185,8 @@ export async function POST(request: Request) {
       after(async () => {
         if (!fullResponse) return;
         const { error: msgErr } = await supabase.from("messages").insert([
-          { conversation_id: convId, role: "user", content: message.trim() },
-          { conversation_id: convId, role: "assistant", content: fullResponse },
+          { conversation_id: convId, org_id: orgId, role: "user", content: message.trim() },
+          { conversation_id: convId, org_id: orgId, role: "assistant", content: fullResponse },
         ]);
         if (msgErr) {
           console.error("[Widget Chat] Failed to save messages:", msgErr.message);
