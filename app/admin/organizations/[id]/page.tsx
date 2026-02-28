@@ -325,6 +325,24 @@ export default function OrgDetailPage() {
         <MetricCard label="Members" value={member_count} />
       </div>
 
+      {/* Workflow */}
+      <div className="rounded-lg border border-ui bg-ui-1 p-5 flex items-center justify-between gap-4">
+        <div>
+          <p className="text-xs font-medium text-foreground/50 uppercase tracking-wider mb-1">
+            Onboarding Workflow
+          </p>
+          <p className="text-sm text-foreground/60">
+            Configure step-by-step guidance for the Chrome extension.
+          </p>
+        </div>
+        <Link
+          href={`/admin/organizations/${id}/workflow`}
+          className="shrink-0 rounded-lg border border-ui px-3 py-1.5 text-sm font-medium hover:bg-background transition-colors"
+        >
+          Configure →
+        </Link>
+      </div>
+
       {/* API Key */}
       <div className="rounded-lg border border-ui bg-ui-1 p-5">
         <p className="text-xs font-medium text-foreground/50 uppercase tracking-wider mb-3">

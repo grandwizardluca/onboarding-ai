@@ -24,7 +24,7 @@ export async function GET(request: Request) {
   // CRITICAL: look up org by api_key — never trust the client's claimed orgId
   const { data: org, error } = await supabase
     .from("organizations")
-    .select("id, name")
+    .select("id, name, workflow_config")
     .eq("api_key", apiKey.trim())
     .maybeSingle();
 
@@ -37,5 +37,9 @@ export async function GET(request: Request) {
     return Response.json({ error: "Invalid API key" }, { status: 401 });
   }
 
-  return Response.json({ orgId: org.id, orgName: org.name });
+  return Response.json({
+    orgId: org.id,
+    orgName: org.name,
+    workflowConfig: org.workflow_config ?? null,
+  });
 }

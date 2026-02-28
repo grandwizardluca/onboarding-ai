@@ -42,6 +42,7 @@ export default function Popup() {
         apiKey: apiKeyInput.trim(),
         orgId: result.orgId,
         orgName: result.orgName,
+        workflowConfig: result.workflowConfig ?? null,
       };
 
       await setAuth(data);

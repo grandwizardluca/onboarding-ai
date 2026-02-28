@@ -3,7 +3,7 @@ export const BACKEND_URL = "https://tessrai.vercel.app";
 
 export async function validateKey(
   apiKey: string
-): Promise<{ orgId: string; orgName: string } | { error: string }> {
+): Promise<{ orgId: string; orgName: string; workflowConfig: unknown } | { error: string }> {
   const res = await fetch(`${BACKEND_URL}/api/widget/validate-key`, {
     headers: { "X-API-Key": apiKey },
   });
