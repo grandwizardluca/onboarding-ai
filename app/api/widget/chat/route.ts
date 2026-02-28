@@ -30,7 +30,7 @@ export async function POST(request: Request) {
 
   try {
     // 2. Parse body — extension sends history + current message + optional context
-    const { message, messages: history, pageContext, workflowContext } = (await request.json()) as {
+    const { message, messages: history, pageContext, workflowContext, conversationId: incomingConvId, deviceId } = (await request.json()) as {
       message: string;
       messages: { role: "user" | "assistant"; content: string }[];
       pageContext?: { url: string; domain: string; title: string };
@@ -40,10 +40,38 @@ export async function POST(request: Request) {
         completedSteps: number[];
         steps: { id: number; title: string; instructions: string; sites: string; completed: boolean }[];
       };
+      conversationId?: string;
+      deviceId?: string;
     };
 
     if (!message?.trim()) {
       return Response.json({ error: "Missing message" }, { status: 400 });
+    }
+
+    // 2b. Get or create a conversation record for persistence
+    let convId: string | null = null;
+    if (incomingConvId) {
+      // Verify this conversation belongs to this org
+      const { data: existing } = await supabase
+        .from("conversations")
+        .select("id")
+        .eq("id", incomingConvId)
+        .eq("org_id", orgId)
+        .maybeSingle();
+      if (existing) convId = existing.id;
+    }
+    if (!convId) {
+      const { data: newConv } = await supabase
+        .from("conversations")
+        .insert({
+          org_id: orgId,
+          title: message.trim().slice(0, 80),
+          device_id: deviceId ?? null,
+          session_status: "in_progress",
+        })
+        .select("id")
+        .single();
+      convId = newConv?.id ?? null;
     }
 
     // 3. Build full conversation for Claude (history + current user message)
@@ -121,15 +149,30 @@ export async function POST(request: Request) {
 
     const readableStream = new ReadableStream({
       async start(controller) {
+        let fullResponse = "";
         try {
           for await (const event of stream) {
             if (
               event.type === "content_block_delta" &&
               event.delta.type === "text_delta"
             ) {
+              fullResponse += event.delta.text;
               controller.enqueue(new TextEncoder().encode(event.delta.text));
             }
           }
+
+          // Persist user + assistant messages after stream completes
+          if (convId && fullResponse) {
+            await supabase.from("messages").insert([
+              { conversation_id: convId, role: "user", content: message.trim() },
+              { conversation_id: convId, role: "assistant", content: fullResponse },
+            ]);
+            await supabase
+              .from("conversations")
+              .update({ updated_at: new Date().toISOString() })
+              .eq("id", convId);
+          }
+
           controller.close();
         } catch (error) {
           console.error("[Widget Chat] Stream error:", error);
@@ -142,6 +185,7 @@ export async function POST(request: Request) {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
         "X-RAG-Sources": sourcesEncoded,
+        ...(convId ? { "X-Conversation-Id": convId } : {}),
       },
     });
   } catch (error) {

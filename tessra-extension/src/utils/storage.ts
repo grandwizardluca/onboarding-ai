@@ -56,6 +56,22 @@ export function clearAuth(): Promise<void> {
   });
 }
 
+// ── Conversation ID (for persistent chat across tabs) ─────────────────────────
+
+export function getConversationId(): Promise<string | null> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(["conversationId"], (result) => {
+      resolve(result.conversationId ?? null);
+    });
+  });
+}
+
+export function saveConversationId(id: string): Promise<void> {
+  return new Promise((resolve) => {
+    chrome.storage.local.set({ conversationId: id }, resolve);
+  });
+}
+
 // ── Device ID (for progress tracking) ─────────────────────────────────────────
 
 export function getDeviceId(): Promise<string> {

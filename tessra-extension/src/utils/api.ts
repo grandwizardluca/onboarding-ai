@@ -56,7 +56,9 @@ export async function widgetChat(
   message: string,
   messages: { role: "user" | "assistant"; content: string }[],
   pageContext?: { url: string; domain: string; title: string },
-  workflowContext?: WorkflowContext
+  workflowContext?: WorkflowContext,
+  conversationId?: string,
+  deviceId?: string
 ): Promise<Response> {
   return fetch(`${BACKEND_URL}/api/widget/chat`, {
     method: "POST",
@@ -64,6 +66,18 @@ export async function widgetChat(
       "Content-Type": "application/json",
       "X-API-Key": apiKey,
     },
-    body: JSON.stringify({ message, messages, pageContext, workflowContext }),
+    body: JSON.stringify({ message, messages, pageContext, workflowContext, conversationId, deviceId }),
   });
+}
+
+export async function loadConversation(
+  apiKey: string,
+  conversationId: string
+): Promise<{ role: "user" | "assistant"; content: string }[]> {
+  const res = await fetch(
+    `${BACKEND_URL}/api/widget/conversation?conversationId=${encodeURIComponent(conversationId)}`,
+    { headers: { "X-API-Key": apiKey } }
+  );
+  if (!res.ok) return [];
+  return res.json();
 }

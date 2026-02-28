@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { getAuth, type WorkflowConfig } from "../utils/storage";
-import { widgetChat, type WorkflowContext } from "../utils/api";
+import { getAuth, getDeviceId, getConversationId, saveConversationId, type WorkflowConfig } from "../utils/storage";
+import { widgetChat, loadConversation, type WorkflowContext } from "../utils/api";
 import MessageList, { type Message, type RAGSource } from "./components/MessageList";
 import ChatInput from "./components/ChatInput";
 
@@ -25,13 +25,38 @@ export default function ChatInterface({ currentStep, completedSteps, workflowCon
   const [messages, setMessages] = useState<Message[]>([]);
   const [streamingContent, setStreamingContent] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(true);
   const [apiKey, setApiKey] = useState<string | null>(null);
+  const [deviceId, setDeviceId] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const [pageContext, setPageContext] = useState<PageContext | null>(null);
 
   useEffect(() => {
-    getAuth().then((auth) => {
-      if (auth) setApiKey(auth.apiKey);
-    });
+    async function init() {
+      const [auth, did, convId] = await Promise.all([
+        getAuth(),
+        getDeviceId(),
+        getConversationId(),
+      ]);
+      if (!auth) { setHistoryLoading(false); return; }
+
+      setApiKey(auth.apiKey);
+      setDeviceId(did);
+
+      if (convId) {
+        setConversationId(convId);
+        const prev = await loadConversation(auth.apiKey, convId);
+        if (prev.length > 0) {
+          setMessages(prev.map((m) => ({
+            id: nextId(),
+            role: m.role as "user" | "assistant",
+            content: m.content,
+          })));
+        }
+      }
+      setHistoryLoading(false);
+    }
+    init();
   }, []);
 
   // Receive page context from the content script via postMessage
@@ -78,7 +103,13 @@ export default function ChatInterface({ currentStep, completedSteps, workflowCon
           }
         : undefined;
 
-      const res = await widgetChat(apiKey, text, history, pageContext ?? undefined, wfContext);
+      const res = await widgetChat(
+        apiKey, text, history,
+        pageContext ?? undefined,
+        wfContext,
+        conversationId ?? undefined,
+        deviceId ?? undefined
+      );
 
       if (!res.ok) {
         setMessages((prev) => [
@@ -86,6 +117,13 @@ export default function ChatInterface({ currentStep, completedSteps, workflowCon
           { id: nextId(), role: "assistant", content: "Sorry, something went wrong. Please try again." },
         ]);
         return;
+      }
+
+      // Capture conversation ID from first response and persist it
+      const returnedConvId = res.headers.get("X-Conversation-Id");
+      if (returnedConvId && !conversationId) {
+        setConversationId(returnedConvId);
+        saveConversationId(returnedConvId);
       }
 
       // Decode RAG sources from header before consuming the body stream
@@ -132,8 +170,8 @@ export default function ChatInterface({ currentStep, completedSteps, workflowCon
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
-      <MessageList messages={messages} streamingContent={streamingContent} isLoading={isLoading} />
-      <ChatInput onSend={sendMessage} disabled={isLoading} />
+      <MessageList messages={messages} streamingContent={streamingContent} isLoading={isLoading || historyLoading} />
+      <ChatInput onSend={sendMessage} disabled={isLoading || historyLoading} />
     </div>
   );
 }
