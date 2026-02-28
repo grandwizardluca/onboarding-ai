@@ -71,8 +71,15 @@ export async function POST(request: Request) {
         })
         .select("id")
         .single();
-      if (convErr) console.error("[Widget Chat] Failed to create conversation:", convErr.message);
+      if (convErr) {
+        console.error("[Widget Chat] Failed to create conversation:", convErr.message, convErr.details);
+      } else if (newConv) {
+        console.log("[Widget Chat] Conversation created:", newConv.id);
+      }
       convId = newConv?.id ?? null;
+    }
+    if (incomingConvId && convId) {
+      console.log("[Widget Chat] Using existing conversation:", convId);
     }
 
     // 3. Build full conversation for Claude (history + current user message)
