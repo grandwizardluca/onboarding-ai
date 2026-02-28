@@ -1,5 +1,5 @@
 // Update this to your deployed Tessra URL (or localhost for dev)
-export const BACKEND_URL = "https://tessrai.dev";
+export const BACKEND_URL = "https://tessrai.vercel.app";
 
 export async function validateKey(
   apiKey: string
