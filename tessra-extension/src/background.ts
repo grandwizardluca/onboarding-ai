@@ -44,4 +44,16 @@ chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
       chrome.tabs.sendMessage(tabId, { type: "TOGGLE_SIDEBAR" }).catch(() => {});
     }
   }
+
+  if (message.type === "STEP_UPDATE") {
+    // Sidebar marked a step complete → forward to the sender's tab content script
+    // so it can refresh the in-page overlay
+    const tabId = _sender.tab?.id;
+    if (tabId) {
+      chrome.tabs.sendMessage(tabId, {
+        type: "STEP_UPDATE",
+        currentStep: message.currentStep,
+      }).catch(() => {});
+    }
+  }
 });

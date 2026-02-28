@@ -1,18 +1,63 @@
 import React, { useEffect, useState } from "react";
-import { getAuth } from "../utils/storage";
+import { getAuth, getDeviceId, type WorkflowConfig } from "../utils/storage";
+import { getProgress, updateProgress } from "../utils/api";
 import ChatInterface from "./ChatInterface";
+import ProgressPanel from "./components/ProgressPanel";
 
 export default function Sidebar() {
   const [orgName, setOrgName] = useState<string | null>(null);
+  const [workflowConfig, setWorkflowConfig] = useState<WorkflowConfig | null>(null);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [deviceId, setDeviceId] = useState<string | null>(null);
 
   useEffect(() => {
-    getAuth().then((auth) => {
-      if (auth) setOrgName(auth.orgName);
-    });
+    async function init() {
+      const auth = await getAuth();
+      if (!auth) return;
+      setOrgName(auth.orgName);
+      setApiKey(auth.apiKey);
+      if (auth.workflowConfig?.steps?.length) {
+        setWorkflowConfig(auth.workflowConfig);
+      }
+
+      const did = await getDeviceId();
+      setDeviceId(did);
+
+      if (auth.workflowConfig?.steps?.length) {
+        const progress = await getProgress(auth.apiKey, did);
+        setCurrentStep(progress.currentStep);
+        setCompletedSteps(progress.completedSteps);
+      }
+    }
+    init();
   }, []);
 
   function handleCollapse() {
     chrome.runtime.sendMessage({ type: "TOGGLE_SIDEBAR" });
+  }
+
+  async function handleMarkComplete() {
+    if (!apiKey || !deviceId || !workflowConfig) return;
+    const newCompleted = completedSteps.includes(currentStep)
+      ? completedSteps
+      : [...completedSteps, currentStep];
+    const nextStep = Math.min(currentStep + 1, workflowConfig.steps.length - 1);
+    const newCurrent = newCompleted.length >= workflowConfig.steps.length
+      ? currentStep  // stay at end when all done
+      : nextStep;
+
+    setCompletedSteps(newCompleted);
+    setCurrentStep(newCurrent);
+
+    await updateProgress(apiKey, deviceId, {
+      currentStep: newCurrent,
+      completedSteps: newCompleted,
+    });
+
+    // Notify content script to refresh the overlay
+    chrome.runtime.sendMessage({ type: "STEP_UPDATE", currentStep: newCurrent });
   }
 
   return (
@@ -36,7 +81,6 @@ export default function Sidebar() {
           title="Collapse sidebar"
           className="flex-shrink-0 rounded p-1.5 text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-colors ml-2"
         >
-          {/* Chevron right — collapse icon */}
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="14"
@@ -53,8 +97,18 @@ export default function Sidebar() {
         </button>
       </div>
 
+      {/* Progress panel — only shown when workflow is configured */}
+      {workflowConfig && (
+        <ProgressPanel
+          config={workflowConfig}
+          currentStep={currentStep}
+          completedSteps={completedSteps}
+          onMarkComplete={handleMarkComplete}
+        />
+      )}
+
       {/* Chat */}
-      <ChatInterface />
+      <ChatInterface currentStep={currentStep} workflowConfig={workflowConfig} />
     </div>
   );
 }

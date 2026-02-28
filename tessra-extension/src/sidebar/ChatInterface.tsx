@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { getAuth } from "../utils/storage";
+import { getAuth, type WorkflowConfig } from "../utils/storage";
 import { widgetChat } from "../utils/api";
 import MessageList, { type Message, type RAGSource } from "./components/MessageList";
 import ChatInput from "./components/ChatInput";
@@ -15,7 +15,12 @@ interface PageContext {
   title: string;
 }
 
-export default function ChatInterface() {
+interface Props {
+  currentStep?: number;
+  workflowConfig?: WorkflowConfig | null;
+}
+
+export default function ChatInterface({ currentStep, workflowConfig }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [streamingContent, setStreamingContent] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -56,7 +61,18 @@ export default function ChatInterface() {
     const history = messages.map((m) => ({ role: m.role, content: m.content }));
 
     try {
-      const res = await widgetChat(apiKey, text, history, pageContext ?? undefined);
+      // Include current workflow step in page context so AI can give step-specific guidance
+      const stepData = workflowConfig?.steps[currentStep ?? 0];
+      const enrichedContext = pageContext
+        ? {
+            ...pageContext,
+            currentStep: stepData
+              ? `Step ${(currentStep ?? 0) + 1}: ${stepData.title}`
+              : undefined,
+          }
+        : undefined;
+
+      const res = await widgetChat(apiKey, text, history, enrichedContext);
 
       if (!res.ok) {
         setMessages((prev) => [

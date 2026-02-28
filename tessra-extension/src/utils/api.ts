@@ -10,6 +10,32 @@ export async function validateKey(
   return res.json();
 }
 
+export interface ProgressData {
+  currentStep: number;
+  completedSteps: number[];
+}
+
+export async function getProgress(apiKey: string, deviceId: string): Promise<ProgressData> {
+  const res = await fetch(
+    `${BACKEND_URL}/api/widget/progress?deviceId=${encodeURIComponent(deviceId)}`,
+    { headers: { "X-API-Key": apiKey } }
+  );
+  if (!res.ok) return { currentStep: 0, completedSteps: [] };
+  return res.json();
+}
+
+export async function updateProgress(
+  apiKey: string,
+  deviceId: string,
+  patch: { currentStep?: number; completedSteps?: number[] }
+): Promise<void> {
+  await fetch(`${BACKEND_URL}/api/widget/progress`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", "X-API-Key": apiKey },
+    body: JSON.stringify({ deviceId, ...patch }),
+  });
+}
+
 export async function widgetChat(
   apiKey: string,
   message: string,
