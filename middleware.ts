@@ -37,13 +37,18 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Public routes — no auth required
-  if (pathname === "/login" || pathname === "/signup" || pathname === "/waiting") {
+  if (pathname === "/login" || pathname === "/signup") {
     // If already logged in, let app/page.tsx handle role-based redirect
     if (user) {
       const url = request.nextUrl.clone();
       url.pathname = "/";
       return NextResponse.redirect(url);
     }
+    return supabaseResponse;
+  }
+
+  // Waiting page — accessible to logged-in users without an org
+  if (pathname === "/waiting") {
     return supabaseResponse;
   }
 

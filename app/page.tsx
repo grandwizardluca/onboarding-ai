@@ -32,19 +32,22 @@ export default async function Home() {
     redirect("/login");
   }
 
-  const { data: membership } = await supabaseAdmin
+  const { data: memberships } = await supabaseAdmin
     .from("memberships")
     .select("role, org_id")
-    .eq("user_id", user.id)
-    .single();
+    .eq("user_id", user.id);
 
-  if (!membership) {
+  if (!memberships || memberships.length === 0) {
     redirect("/waiting");
   }
 
-  if (membership.role === "platform_admin") {
+  // If user has any platform_admin membership, send them to admin
+  if (memberships.some((m) => m.role === "platform_admin")) {
     redirect("/admin");
   }
+
+  // Otherwise use their first org membership
+  const membership = memberships[0];
 
   // For org members, redirect to their client dashboard
   const { data: org } = await supabaseAdmin
