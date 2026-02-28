@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import ThemeToggle from "@/components/ThemeToggle";
+import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
   { href: "/admin", label: "Dashboard" },
@@ -22,6 +23,13 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  async function handleSignOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+  }
 
   return (
     <div className="min-h-screen bg-admin-bg">
@@ -38,8 +46,14 @@ export default function AdminLayout({
                 Admin
               </span>
             </h1>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <ThemeToggle />
+              <button
+                onClick={handleSignOut}
+                className="rounded-md px-3 py-1.5 text-xs text-foreground/50 hover:text-foreground border border-transparent hover:border-ui transition-all duration-200"
+              >
+                Sign out
+              </button>
             </div>
           </div>
           <div className="flex gap-1 overflow-x-auto -mx-1 px-1 sm:mt-2">

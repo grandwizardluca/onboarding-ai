@@ -4,14 +4,19 @@ import { validateKey } from "../utils/api";
 
 type Status = "loading" | "unauthenticated" | "authenticated";
 
+function isRestrictedUrl(url: string) {
+  return url.startsWith("chrome://") || url.startsWith("chrome-extension://") || url.startsWith("about:");
+}
+
 export default function Popup() {
   const [status, setStatus] = useState<Status>("loading");
   const [auth, setAuthState] = useState<AuthData | null>(null);
   const [apiKeyInput, setApiKeyInput] = useState("");
   const [error, setError] = useState("");
   const [validating, setValidating] = useState(false);
+  const [onRestrictedPage, setOnRestrictedPage] = useState(false);
 
-  // On mount, check if already authenticated
+  // On mount, check if already authenticated and whether current tab is restricted
   useEffect(() => {
     getAuth().then((data) => {
       if (data) {
@@ -20,6 +25,12 @@ export default function Popup() {
       } else {
         setStatus("unauthenticated");
       }
+    });
+
+    // Check if active tab is a chrome:// or other restricted page
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const url = tabs[0]?.url ?? "";
+      setOnRestrictedPage(isRestrictedUrl(url));
     });
   }, []);
 
@@ -50,7 +61,10 @@ export default function Popup() {
       setStatus("authenticated");
 
       // Tell the active tab's content script to inject the sidebar
-      chrome.runtime.sendMessage({ type: "AUTH_SUCCESS" });
+      // (silently ignore if current tab is a restricted chrome:// page)
+      chrome.runtime.sendMessage({ type: "AUTH_SUCCESS" }, () => {
+        void chrome.runtime.lastError;
+      });
     } catch {
       setError("Could not connect to Tessra. Check your internet connection.");
     } finally {
@@ -97,9 +111,18 @@ export default function Popup() {
             <p style={{ margin: "4px 0 0", fontSize: 14, fontWeight: 600, color: "#e2e8f0" }}>{auth.orgName}</p>
           </div>
 
-          <p style={{ fontSize: 12, color: "#64748b", margin: "0 0 14px" }}>
-            The sidebar is active on all pages. Look for the Tessra panel on the right side.
-          </p>
+          {onRestrictedPage ? (
+            <div style={{ background: "#2d1a00", border: "1px solid #4a3000", borderRadius: 8, padding: "10px 12px", marginBottom: 14 }}>
+              <p style={{ margin: 0, fontSize: 12, color: "#fbbf24", fontWeight: 600 }}>Sidebar unavailable here</p>
+              <p style={{ margin: "4px 0 0", fontSize: 11, color: "#92400e" }}>
+                Chrome doesn't allow extensions on browser pages. Navigate to any regular website to use the assistant.
+              </p>
+            </div>
+          ) : (
+            <p style={{ fontSize: 12, color: "#64748b", margin: "0 0 14px" }}>
+              The sidebar is active on all pages. Look for the Tessra panel on the right side.
+            </p>
+          )}
 
           <button
             onClick={handleDisconnect}

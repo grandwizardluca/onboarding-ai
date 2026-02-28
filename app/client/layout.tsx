@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import ThemeToggle from "@/components/ThemeToggle";
+import { createClient } from "@/lib/supabase/client";
 
 export default function ClientLayout({
   children,
@@ -10,8 +11,15 @@ export default function ClientLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   // Extract orgSlug from path: /client/[orgSlug]/...
   const orgSlug = pathname.split("/")[2] ?? "";
+
+  async function handleSignOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+  }
 
   return (
     <div className="min-h-screen bg-admin-bg">
@@ -28,7 +36,15 @@ export default function ClientLayout({
                 Dashboard
               </span>
             </h1>
-            <ThemeToggle />
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <button
+                onClick={handleSignOut}
+                className="rounded-md px-3 py-1.5 text-xs text-foreground/50 hover:text-foreground border border-transparent hover:border-ui transition-all duration-200"
+              >
+                Sign out
+              </button>
+            </div>
           </div>
           {orgSlug && (
             <div className="flex gap-1 sm:mt-2">
@@ -51,6 +67,16 @@ export default function ClientLayout({
                 }`}
               >
                 Insights
+              </Link>
+              <Link
+                href={`/client/${orgSlug}/workflow`}
+                className={`rounded-md px-3 py-1.5 text-sm whitespace-nowrap transition-all duration-300 border ${
+                  pathname.startsWith(`/client/${orgSlug}/workflow`)
+                    ? "bg-ui-2 text-foreground border-ui-strong"
+                    : "text-foreground/55 hover:text-foreground hover-bg-ui-2 border-transparent"
+                }`}
+              >
+                Workflow
               </Link>
             </div>
           )}
