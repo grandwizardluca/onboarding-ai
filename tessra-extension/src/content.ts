@@ -101,15 +101,18 @@ function injectStepOverlay(step: WorkflowStep) {
         <span style="color:#6366f1;font-size:14px;">✦</span>
         <span style="font-size:11px;font-weight:700;color:#6366f1;letter-spacing:0.05em;text-transform:uppercase;">Step ${currentStepIndex + 1}</span>
       </div>
-      <button id="tessra-overlay-close" style="background:none;border:none;cursor:pointer;color:#475569;font-size:16px;line-height:1;padding:0;" title="Dismiss">×</button>
+      <button type="button" id="tessra-overlay-close" style="background:none;border:none;cursor:pointer;color:#475569;font-size:16px;line-height:1;padding:0;" title="Dismiss">×</button>
     </div>
     <p style="margin:0 0 6px;font-size:13px;font-weight:600;color:#e2e8f0;line-height:1.3;">${escapeHtml(step.title)}</p>
     <p style="margin:0 0 12px;font-size:12px;color:#94a3b8;line-height:1.5;">${escapeHtml(step.instructions)}</p>
-    <button id="tessra-overlay-complete" style="width:100%;padding:7px 12px;background:#6366f1;border:none;border-radius:7px;cursor:pointer;color:#fff;font-size:12px;font-weight:600;font-family:inherit;">Mark this step complete ✓</button>
+    <button type="button" id="tessra-overlay-complete" style="width:100%;padding:7px 12px;background:#6366f1;border:none;border-radius:7px;cursor:pointer;color:#fff;font-size:12px;font-weight:600;font-family:inherit;">Mark this step complete ✓</button>
   `;
 
   document.documentElement.appendChild(div);
   overlayEl = div;
+
+  // Stop all clicks inside the overlay from bubbling to the host page
+  div.addEventListener("click", (e) => e.stopPropagation());
 
   div.querySelector("#tessra-overlay-close")?.addEventListener("click", () => {
     removeStepOverlay();

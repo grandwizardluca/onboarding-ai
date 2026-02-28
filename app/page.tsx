@@ -39,7 +39,7 @@ export default async function Home() {
     .single();
 
   if (!membership) {
-    redirect("/login");
+    redirect("/waiting");
   }
 
   if (membership.role === "platform_admin") {

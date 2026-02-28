@@ -29,7 +29,7 @@ export default function SignupPage() {
       return;
     }
 
-    router.push("/chat");
+    router.push("/");
     router.refresh();
   }
 

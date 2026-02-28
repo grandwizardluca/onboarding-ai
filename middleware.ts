@@ -37,7 +37,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Public routes — no auth required
-  if (pathname === "/login" || pathname === "/signup") {
+  if (pathname === "/login" || pathname === "/signup" || pathname === "/waiting") {
     // If already logged in, let app/page.tsx handle role-based redirect
     if (user) {
       const url = request.nextUrl.clone();
@@ -64,7 +64,7 @@ export async function middleware(request: NextRequest) {
 
     if (!membership || membership.role !== "platform_admin") {
       const url = request.nextUrl.clone();
-      url.pathname = "/chat";
+      url.pathname = "/";
       return NextResponse.redirect(url);
     }
   }
