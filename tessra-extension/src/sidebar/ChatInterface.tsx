@@ -15,6 +15,17 @@ interface PageContext {
   title: string;
 }
 
+interface PageElement {
+  index: number;
+  type: string;
+  text: string;
+  id: string;
+  ariaLabel: string;
+  placeholder: string;
+  nearbyLabel: string;
+  visibleInViewport: boolean;
+}
+
 interface Props {
   currentStep?: number;
   completedSteps?: number[];
@@ -30,6 +41,7 @@ export default function ChatInterface({ currentStep, completedSteps, workflowCon
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [pageContext, setPageContext] = useState<PageContext | null>(null);
+  const [pageElements, setPageElements] = useState<PageElement[] | null>(null);
 
   useEffect(() => {
     async function init() {
@@ -68,6 +80,9 @@ export default function ChatInterface({ currentStep, completedSteps, workflowCon
           domain: event.data.domain,
           title: event.data.title,
         });
+        if (Array.isArray(event.data.elements)) {
+          setPageElements(event.data.elements);
+        }
       }
     }
     window.addEventListener("message", handleMessage);
@@ -109,7 +124,8 @@ export default function ChatInterface({ currentStep, completedSteps, workflowCon
         pageContext ?? undefined,
         wfContext,
         conversationId ?? undefined,
-        deviceId ?? undefined
+        deviceId ?? undefined,
+        pageElements ?? undefined
       );
 
       if (!res.ok) {

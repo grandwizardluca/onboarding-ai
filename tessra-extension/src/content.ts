@@ -21,7 +21,9 @@ function getPageContext() {
 function postPageContext() {
   const iframe = sidebarContainer?.querySelector("iframe") as HTMLIFrameElement | null;
   if (!iframe?.contentWindow) return;
-  iframe.contentWindow.postMessage(getPageContext(), "*");
+  // Include live DOM snapshot so the chat AI can reference exact elements by name
+  const elements = extractInteractiveElements();
+  iframe.contentWindow.postMessage({ ...getPageContext(), elements }, "*");
 }
 
 // Intercept SPA navigation so we detect URL changes in React/Next.js apps
@@ -342,7 +344,7 @@ async function analyzeAndHighlight() {
       result.elementType !== null &&
       result.elementIndex !== null &&
       typeof result.confidence === "number" &&
-      result.confidence >= 0.7
+      result.confidence >= 0.55
     ) {
       highlightElement(result.elementIndex, result.tooltip);
     } else {

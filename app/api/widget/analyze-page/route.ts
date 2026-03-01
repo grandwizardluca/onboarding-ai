@@ -69,31 +69,30 @@ export async function POST(request: NextRequest) {
     })
     .join("\n");
 
-  const prompt = `You are helping guide a user through a software onboarding step on a real website.
+  const prompt = `You are an onboarding assistant identifying which UI element a user should interact with next.
 
-Current workflow step: "${step.title}"
-Step instructions: "${step.instructions}"
-
+Current step: "${step.title}"
+Instructions: "${step.instructions}"
 Page URL: ${snapshot.url}
 
-Interactive elements found on the page:
+Interactive elements on the page:
 ${elementLines}
 
-Which SINGLE element should be highlighted to best help the user complete this step?
+You MUST select the single best element for this step. Be decisive — pick the closest match even if it's not perfect. Only return null elementIndex if the page is completely unrelated to this step (e.g. a login page when the step is about DNS).
 
 Rules:
-- Choose the element most directly relevant to the step instructions
-- If an element is "below fold", the user needs to scroll — still select it if it's the right one
-- Only return null if truly no element relates to this step
-- Keep tooltip under 60 characters, action-oriented (e.g. "Click here to add DNS record")
+- Prefer elements in the viewport (visible) over below-fold elements
+- Match on text, aria-label, placeholder, or nearby label
+- Tooltip must be under 60 characters, imperative (e.g. "Click to add DNS record", "Enter your domain here")
+- Set confidence 0.5–1.0 based on how clearly the element matches; do not round to extremes
 
 Respond with ONLY valid JSON, no markdown fences:
 {
   "elementType": "button" | "input" | "select" | "link" | null,
   "elementIndex": <number or null>,
-  "confidence": <0.0 to 1.0>,
-  "tooltip": "<short user-friendly instruction>",
-  "reasoning": "<one sentence explanation>"
+  "confidence": <0.5 to 1.0>,
+  "tooltip": "<short imperative instruction>",
+  "reasoning": "<one sentence>"
 }`;
 
   try {

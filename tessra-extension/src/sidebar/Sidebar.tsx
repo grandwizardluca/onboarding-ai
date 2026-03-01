@@ -67,6 +67,9 @@ export default function Sidebar() {
         const progress = await getProgress(auth.apiKey, did);
         setCurrentStep(progress.currentStep);
         setCompletedSteps(progress.completedSteps);
+        // Sync content.ts's step index — it always starts at 0, so we must tell it
+        // the real step on every sidebar load, not just when the user clicks complete
+        safeSendMessage({ type: "STEP_UPDATE", currentStep: progress.currentStep });
       }
       setProgressLoading(false);
     }

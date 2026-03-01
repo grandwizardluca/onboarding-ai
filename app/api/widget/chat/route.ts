@@ -31,7 +31,7 @@ export async function POST(request: Request) {
 
   try {
     // 2. Parse body — extension sends history + current message + optional context
-    const { message, messages: history, pageContext, workflowContext, conversationId: incomingConvId, deviceId } = (await request.json()) as {
+    const { message, messages: history, pageContext, workflowContext, conversationId: incomingConvId, deviceId, pageElements } = (await request.json()) as {
       message: string;
       messages: { role: "user" | "assistant"; content: string }[];
       pageContext?: { url: string; domain: string; title: string };
@@ -43,6 +43,11 @@ export async function POST(request: Request) {
       };
       conversationId?: string;
       deviceId?: string;
+      pageElements?: {
+        index: number; type: string; text: string; id: string;
+        ariaLabel: string; placeholder: string; nearbyLabel: string;
+        visibleInViewport: boolean;
+      }[];
     };
 
     if (!message?.trim()) {
@@ -138,6 +143,24 @@ export async function POST(request: Request) {
     } else if (pageContext) {
       contextParts.push(
         `Current page: "${pageContext.title}" — ${pageContext.url}\nDomain: ${pageContext.domain}`
+      );
+    }
+
+    // Append live DOM snapshot so AI can reference actual visible elements by name
+    if (pageElements && pageElements.length > 0) {
+      const elementLines = pageElements.map((el) => {
+        const parts: string[] = [`[${el.index}] ${el.type.toUpperCase()}`];
+        if (el.text) parts.push(`text="${el.text}"`);
+        if (el.id) parts.push(`id="${el.id}"`);
+        if (el.ariaLabel) parts.push(`aria-label="${el.ariaLabel}"`);
+        if (el.placeholder) parts.push(`placeholder="${el.placeholder}"`);
+        if (el.nearbyLabel) parts.push(`label="${el.nearbyLabel}"`);
+        parts.push(el.visibleInViewport ? "(visible)" : "(below fold — scroll needed)");
+        return parts.join(" ");
+      }).join("\n");
+
+      contextParts.push(
+        `═══ LIVE PAGE ELEMENTS ═══\nThese are the interactive elements currently on the page. Reference them by their visible text or label when guiding the user — do NOT ask the user to describe what they see.\n\n${elementLines}`
       );
     }
 

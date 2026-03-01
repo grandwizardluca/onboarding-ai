@@ -51,6 +51,17 @@ export interface WorkflowContext {
   steps: WorkflowContextStep[];
 }
 
+export interface PageElement {
+  index: number;
+  type: string;
+  text: string;
+  id: string;
+  ariaLabel: string;
+  placeholder: string;
+  nearbyLabel: string;
+  visibleInViewport: boolean;
+}
+
 export async function widgetChat(
   apiKey: string,
   message: string,
@@ -58,7 +69,8 @@ export async function widgetChat(
   pageContext?: { url: string; domain: string; title: string },
   workflowContext?: WorkflowContext,
   conversationId?: string,
-  deviceId?: string
+  deviceId?: string,
+  pageElements?: PageElement[]
 ): Promise<Response> {
   return fetch(`${BACKEND_URL}/api/widget/chat`, {
     method: "POST",
@@ -66,7 +78,7 @@ export async function widgetChat(
       "Content-Type": "application/json",
       "X-API-Key": apiKey,
     },
-    body: JSON.stringify({ message, messages, pageContext, workflowContext, conversationId, deviceId }),
+    body: JSON.stringify({ message, messages, pageContext, workflowContext, conversationId, deviceId, pageElements }),
   });
 }
 
