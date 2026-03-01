@@ -87,18 +87,19 @@ export default function ChatInterface({ currentStep, completedSteps, workflowCon
     const history = messages.map((m) => ({ role: m.role, content: m.content }));
 
     try {
-      // Build full workflow context so AI understands all steps, not just the current one
+      // Use array index (i) as step id — s.id is a timestamp from the workflow builder
+      // and doesn't match the index-based progress tracking in Sidebar.tsx
       const wfContext: WorkflowContext | undefined = workflowConfig?.steps?.length
         ? {
             totalSteps: workflowConfig.steps.length,
             currentStep: currentStep ?? 0,
             completedSteps: completedSteps ?? [],
-            steps: workflowConfig.steps.map((s) => ({
-              id: s.id,
+            steps: workflowConfig.steps.map((s, i) => ({
+              id: i,
               title: s.title,
               instructions: s.instructions,
               sites: s.sites,
-              completed: (completedSteps ?? []).includes(s.id),
+              completed: (completedSteps ?? []).includes(i),
             })),
           }
         : undefined;
