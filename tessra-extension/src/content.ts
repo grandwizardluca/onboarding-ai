@@ -223,7 +223,7 @@ function injectHighlightStyles() {
     }
     #tessra-highlight { animation: tessra-pulse 2s ease-in-out infinite; }
   `;
-  document.documentElement.appendChild(style);
+  (document.head || document.documentElement).appendChild(style);
 }
 
 function highlightElement(index: number, tooltip: string) {
@@ -340,13 +340,8 @@ async function analyzeAndHighlight() {
     if (!res.ok) return;
     const result = await res.json();
 
-    if (
-      result.elementType !== null &&
-      result.elementIndex !== null &&
-      typeof result.confidence === "number" &&
-      result.confidence >= 0.55
-    ) {
-      highlightElement(result.elementIndex, result.tooltip);
+    if (result.elementIndex !== null && result.elementIndex !== undefined) {
+      highlightElement(result.elementIndex, result.tooltip || "");
     } else {
       removeHighlight();
     }
