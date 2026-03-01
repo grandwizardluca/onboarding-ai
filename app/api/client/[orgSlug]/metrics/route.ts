@@ -83,8 +83,10 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
   // 4. Enrich recent sessions with user email + message count
   const enriched = await Promise.all(
     conversations.map(async (conv) => {
-      const [{ data: userData }, { count }] = await Promise.all([
-        supabase.auth.admin.getUserById(conv.user_id),
+      const [userResult, { count }] = await Promise.all([
+        conv.user_id
+          ? supabase.auth.admin.getUserById(conv.user_id)
+          : Promise.resolve({ data: null }),
         supabase
           .from("messages")
           .select("id", { count: "exact", head: true })
@@ -109,7 +111,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
         title: conv.title,
         created_at: conv.created_at,
         updated_at: conv.updated_at,
-        user_email: userData?.user?.email ?? "Unknown",
+        user_email: (userResult as { data: { user?: { email?: string } } | null }).data?.user?.email ?? "Widget session",
         message_count: msgCount,
         duration_mins: durationMins,
         status,
