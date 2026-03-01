@@ -2,6 +2,16 @@ import { NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import Anthropic from "@anthropic-ai/sdk";
 
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, X-API-Key",
+};
+
+export function OPTIONS() {
+  return new Response(null, { status: 204, headers: CORS });
+}
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -32,7 +42,7 @@ export async function POST(request: NextRequest) {
   // Auth via X-API-Key
   const apiKey = request.headers.get("X-API-Key");
   if (!apiKey?.trim()) {
-    return Response.json({ error: "Missing X-API-Key" }, { status: 401 });
+    return Response.json({ error: "Missing X-API-Key" }, { status: 401, headers: CORS });
   }
 
   const { data: org } = await supabase
@@ -42,7 +52,7 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
 
   if (!org) {
-    return Response.json({ error: "Invalid API key" }, { status: 401 });
+    return Response.json({ error: "Invalid API key" }, { status: 401, headers: CORS });
   }
 
   const body = await request.json();
@@ -52,7 +62,7 @@ export async function POST(request: NextRequest) {
   };
 
   if (!snapshot?.elements || !step?.title) {
-    return Response.json({ error: "Missing snapshot or step" }, { status: 400 });
+    return Response.json({ error: "Missing snapshot or step" }, { status: 400, headers: CORS });
   }
 
   // Build element list for prompt
@@ -106,7 +116,7 @@ Respond with ONLY valid JSON, no markdown fences:
       response.content[0].type === "text" ? response.content[0].text.trim() : "";
 
     const result: AnalysisResult = JSON.parse(text);
-    return Response.json(result);
+    return Response.json(result, { headers: CORS });
   } catch (error) {
     console.error("[analyze-page] Failed:", error);
     // Return no-match on parse or API error — don't crash the user experience
@@ -116,6 +126,6 @@ Respond with ONLY valid JSON, no markdown fences:
       confidence: 0,
       tooltip: "",
       reasoning: "Analysis failed",
-    });
+    }, { headers: CORS });
   }
 }
