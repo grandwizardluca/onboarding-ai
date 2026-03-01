@@ -53,6 +53,7 @@ chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
       chrome.tabs.sendMessage(tabId, {
         type: "STEP_UPDATE",
         currentStep: message.currentStep,
+        workflowConfig: message.workflowConfig ?? null,
       }).catch(() => {});
     }
   }

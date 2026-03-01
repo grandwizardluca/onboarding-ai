@@ -69,7 +69,7 @@ export default function Sidebar() {
         setCompletedSteps(progress.completedSteps);
         // Sync content.ts's step index — it always starts at 0, so we must tell it
         // the real step on every sidebar load, not just when the user clicks complete
-        safeSendMessage({ type: "STEP_UPDATE", currentStep: progress.currentStep });
+        safeSendMessage({ type: "STEP_UPDATE", currentStep: progress.currentStep, workflowConfig: auth.workflowConfig });
       }
       setProgressLoading(false);
     }

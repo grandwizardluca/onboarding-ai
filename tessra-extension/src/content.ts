@@ -502,8 +502,9 @@ try {
     if (message.type === "TOGGLE_SIDEBAR") toggleSidebar();
 
     if (message.type === "STEP_UPDATE") {
-      // Step advanced — reset highlight and re-check overlay for new step
+      // Step advanced (or initial sync) — update config + re-check overlay
       currentStepIndex = message.currentStep ?? 0;
+      if (message.workflowConfig) currentWorkflowConfig = message.workflowConfig;
       stopObserver();
       removeHighlight();
       checkOverlay();
