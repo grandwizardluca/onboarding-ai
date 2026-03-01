@@ -318,11 +318,13 @@ function stopObserver() {
 
 async function analyzeAndHighlight() {
   const step = getStepForCurrentDomain();
+  console.log("[Tessra] analyzeAndHighlight — step:", step?.title, "apiKey:", !!currentApiKey, "isAnalyzing:", isAnalyzing);
   if (!step || !currentApiKey || isAnalyzing) return;
 
   isAnalyzing = true;
   try {
     const elements = extractInteractiveElements();
+    console.log("[Tessra] extracted elements:", elements.length);
     if (elements.length === 0) return;
 
     const res = await fetch(`${BACKEND_URL}/api/widget/analyze-page`, {
@@ -337,16 +339,20 @@ async function analyzeAndHighlight() {
       }),
     });
 
+    console.log("[Tessra] analyze-page response status:", res.status);
     if (!res.ok) return;
     const result = await res.json();
+    console.log("[Tessra] analyze-page result:", result);
 
     if (result.elementIndex !== null && result.elementIndex !== undefined) {
+      const el = findElementByIndex(result.elementIndex);
+      console.log("[Tessra] findElementByIndex(", result.elementIndex, "):", el);
       highlightElement(result.elementIndex, result.tooltip || "");
     } else {
       removeHighlight();
     }
-  } catch {
-    // Network or parse error — fail silently, don't break the page
+  } catch (err) {
+    console.error("[Tessra] analyzeAndHighlight error:", err);
   } finally {
     isAnalyzing = false;
   }
