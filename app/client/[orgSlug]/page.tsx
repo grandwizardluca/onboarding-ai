@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 interface OrgInfo {
   id: string;
@@ -103,6 +103,7 @@ function formatDate(iso: string) {
 
 export default function ClientDashboard() {
   const params = useParams();
+  const router = useRouter();
   const orgSlug = params.orgSlug as string;
 
   const [metrics, setMetrics] = useState<Metrics | null>(null);
@@ -299,10 +300,18 @@ export default function ClientDashboard() {
 
       {/* Recent sessions */}
       <div>
-        <h3 className="font-semibold text-sm mb-3">
-          Recent Sessions{" "}
-          <span className="text-foreground/40 font-normal">({session_count})</span>
-        </h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold text-sm">
+            Recent Sessions{" "}
+            <span className="text-foreground/40 font-normal">({session_count})</span>
+          </h3>
+          <button
+            onClick={() => router.push(`/client/${orgSlug}/conversations`)}
+            className="text-xs text-accent hover:underline"
+          >
+            View all →
+          </button>
+        </div>
 
         {recent_sessions.length === 0 ? (
           <div className="rounded-lg border border-ui bg-ui-1 p-8 text-center">
@@ -325,7 +334,11 @@ export default function ClientDashboard() {
               </thead>
               <tbody className="divide-y divide-ui">
                 {recent_sessions.map((s) => (
-                  <tr key={s.id} className="bg-background">
+                  <tr
+                    key={s.id}
+                    className="bg-background hover:bg-ui-1 cursor-pointer transition-colors"
+                    onClick={() => router.push(`/client/${orgSlug}/conversations`)}
+                  >
                     <td className="px-5 py-3">
                       <p className="text-sm truncate max-w-[180px]">{s.user_email}</p>
                       <p className="text-xs text-foreground/40 mt-0.5 truncate max-w-[180px]">

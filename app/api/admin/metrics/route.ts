@@ -34,8 +34,10 @@ export async function GET() {
 
   const enriched = await Promise.all(
     sessions.map(async (conv) => {
-      const [{ data: userData }, { count }] = await Promise.all([
-        supabase.auth.admin.getUserById(conv.user_id),
+      const [userResult, { count }] = await Promise.all([
+        conv.user_id
+          ? supabase.auth.admin.getUserById(conv.user_id)
+          : Promise.resolve({ data: null }),
         supabase
           .from("messages")
           .select("id", { count: "exact", head: true })
@@ -43,13 +45,14 @@ export async function GET() {
       ]);
 
       const org = conv.organizations as unknown as { name: string; slug: string } | null;
+      const userData = (userResult as { data: { user?: { email?: string } } | null }).data;
 
       return {
         id: conv.id,
         title: conv.title,
         created_at: conv.created_at,
         updated_at: conv.updated_at,
-        user_email: userData?.user?.email ?? "Unknown",
+        user_email: userData?.user?.email ?? "Widget session",
         message_count: count ?? 0,
         org_name: org?.name ?? "Unknown",
         org_slug: org?.slug ?? "",

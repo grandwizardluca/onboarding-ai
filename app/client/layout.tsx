@@ -69,6 +69,16 @@ export default function ClientLayout({
                 Insights
               </Link>
               <Link
+                href={`/client/${orgSlug}/conversations`}
+                className={`rounded-md px-3 py-1.5 text-sm whitespace-nowrap transition-all duration-300 border ${
+                  pathname.startsWith(`/client/${orgSlug}/conversations`)
+                    ? "bg-ui-2 text-foreground border-ui-strong"
+                    : "text-foreground/55 hover:text-foreground hover-bg-ui-2 border-transparent"
+                }`}
+              >
+                Conversations
+              </Link>
+              <Link
                 href={`/client/${orgSlug}/workflow`}
                 className={`rounded-md px-3 py-1.5 text-sm whitespace-nowrap transition-all duration-300 border ${
                   pathname.startsWith(`/client/${orgSlug}/workflow`)
